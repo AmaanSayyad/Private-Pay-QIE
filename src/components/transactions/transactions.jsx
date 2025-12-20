@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { shortenId } from "../../utils/formatting-utils.js";
 import { Spinner, Chip } from "@nextui-org/react";
 import { getUserPayments } from "../../lib/supabase.js";
+import { useAptos } from "../../providers/QIEWalletProvider.jsx";
 import { 
   getNetworkDisplayInfo, 
   determineTransactionNetwork, 
@@ -12,15 +13,28 @@ import {
 } from "../../utils/qie-utils.js";
 
 export default function Transactions() {
+  const { account } = useAptos();
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [username, setUsername] = useState("");
-  const [networkFilter, setNetworkFilter] = useState("all"); // "all", "qie", "aptos"
+
+  // Get username from localStorage when account changes
+  useEffect(() => {
+    if (account) {
+      const savedUsername = localStorage.getItem(`qie_username_${account}`);
+      const userUsername = savedUsername || account.slice(2, 8);
+      setUsername(userUsername);
+    }
+  }, [account]);
 
   const loadTransactions = async () => {
+    if (!username) return; // Don't load if no username
+    
     try {
+      console.log('Loading transactions for username:', username);
       // Get transactions from database with network information
       const allTransactions = await getUserPayments(username);
+      console.log('Loaded transactions:', allTransactions);
       setTransactions(allTransactions);
     } catch (error) {
       console.error("Error loading transactions:", error);
@@ -30,27 +44,32 @@ export default function Transactions() {
   };
 
   useEffect(() => {
-    loadTransactions();
-
-    // Refresh every 10 seconds
-    const interval = setInterval(() => {
+    if (username) {
       loadTransactions();
-    }, 10000);
 
-    return () => clearInterval(interval);
-  }, []);
+      // Refresh every 10 seconds
+      const interval = setInterval(() => {
+        loadTransactions();
+      }, 10000);
+
+      // Listen for balance updates (triggered after payments/withdrawals)
+      const handleBalanceUpdate = () => {
+        console.log('Balance updated, refreshing transactions...');
+        loadTransactions();
+      };
+
+      window.addEventListener('balance-updated', handleBalanceUpdate);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('balance-updated', handleBalanceUpdate);
+      };
+    }
+  }, [username]); // Depend on username instead of empty array
 
   const groupedTransactions = useMemo(() => {
-    // Filter transactions by network if filter is applied
-    let filteredTransactions = transactions;
-    if (networkFilter !== "all") {
-      filteredTransactions = transactions?.filter(tx => {
-        const network = determineTransactionNetwork(tx);
-        return network === networkFilter;
-      });
-    }
-
-    return filteredTransactions?.reduce((acc, tx) => {
+    // Show all transactions (no filtering needed since we only use QIE now)
+    return transactions?.reduce((acc, tx) => {
       const dateKey = format(new Date(tx.created_at), "MM/dd/yyyy");
       if (!acc[dateKey]) {
         acc[dateKey] = [];
@@ -58,65 +77,36 @@ export default function Transactions() {
       acc[dateKey].push(tx);
       return acc;
     }, {});
-  }, [transactions, networkFilter]);
+  }, [transactions]);
 
-  // Calculate network statistics
+  // Calculate network statistics - only show QIE
   const networkStats = useMemo(() => {
     if (!transactions || transactions.length === 0) {
-      return { total: 0, qie: 0, aptos: 0 };
+      return { total: 0, qie: 0 };
     }
 
     const stats = transactions.reduce((acc, tx) => {
       const network = determineTransactionNetwork(tx);
       acc.total++;
-      acc[network] = (acc[network] || 0) + 1;
+      if (network === 'qie') {
+        acc.qie = (acc.qie || 0) + 1;
+      }
       return acc;
-    }, { total: 0, qie: 0, aptos: 0 });
+    }, { total: 0, qie: 0 });
 
     return stats;
   }, [transactions]);
 
   return (
     <div className={"relative flex h-full w-full flex-col"}>
-      {/* Network Filter Header */}
+      {/* Simplified Header - No Network Filter */}
       {transactions && transactions.length > 0 && (
         <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-700">Filter by Network</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-gray-700">Recent Transactions</h3>
             <div className="text-xs text-gray-500">
-              Total: {networkStats.total} transactions
+              {networkStats.total} transaction{networkStats.total !== 1 ? 's' : ''}
             </div>
-          </div>
-          <div className="flex gap-2">
-            <Chip
-              size="sm"
-              color={networkFilter === "all" ? "primary" : "default"}
-              variant={networkFilter === "all" ? "solid" : "bordered"}
-              className="cursor-pointer"
-              onClick={() => setNetworkFilter("all")}
-            >
-              All ({networkStats.total})
-            </Chip>
-            <Chip
-              size="sm"
-              color={networkFilter === "qie" ? "primary" : "default"}
-              variant={networkFilter === "qie" ? "solid" : "bordered"}
-              className="cursor-pointer"
-              onClick={() => setNetworkFilter("qie")}
-            >
-              QIE ({networkStats.qie || 0})
-            </Chip>
-            {networkStats.aptos > 0 && (
-              <Chip
-                size="sm"
-                color={networkFilter === "aptos" ? "warning" : "default"}
-                variant={networkFilter === "aptos" ? "solid" : "bordered"}
-                className="cursor-pointer"
-                onClick={() => setNetworkFilter("aptos")}
-              >
-                Aptos ({networkStats.aptos})
-              </Chip>
-            )}
           </div>
         </div>
       )}
@@ -160,28 +150,16 @@ export default function Transactions() {
                 }
                 
                 return (
-                  <div key={idx} className="relative">
-                    <TxItem
-                      isNounsies
-                      addressNounsies={`${username}.privatepay.me`}
-                      chainImg={networkInfo.icon}
-                      title={title}
-                      subtitle={subtitle}
-                      value={value}
-                      subValue={tx.tx_hash ? shortenId(tx.tx_hash) : ''}
-                    />
-                    {/* Network indicator badge */}
-                    <div className="absolute top-3 right-0">
-                      <Chip 
-                        size={badgeProps.size}
-                        color={badgeProps.color}
-                        variant={badgeProps.variant}
-                        className="text-xs"
-                      >
-                        {badgeProps.label}
-                      </Chip>
-                    </div>
-                  </div>
+                  <TxItem
+                    key={idx}
+                    isNounsies
+                    addressNounsies={`${username}.privatepay.me`}
+                    chainImg={networkInfo.icon}
+                    title={title}
+                    subtitle={subtitle}
+                    value={value}
+                    subValue={tx.tx_hash ? shortenId(tx.tx_hash) : ''}
+                  />
                 );
               })}
             </div>
@@ -189,29 +167,10 @@ export default function Transactions() {
         </div>
       ) : (
         <div className="w-full flex flex-col items-center justify-center min-h-64 gap-2">
-          <p className="text-gray-600">
-            {networkFilter === "all" 
-              ? "No transactions found" 
-              : `No ${networkFilter.toUpperCase()} transactions found`
-            }
-          </p>
+          <p className="text-gray-600">No transactions found</p>
           <p className="text-sm text-gray-400">
-            {networkFilter === "all"
-              ? "Transactions will appear here when you receive or withdraw funds"
-              : `Switch to "All" to see transactions from other networks`
-            }
+            Transactions will appear here when you receive or withdraw funds
           </p>
-          {networkFilter !== "all" && (
-            <Chip
-              size="sm"
-              color="primary"
-              variant="bordered"
-              className="cursor-pointer mt-2"
-              onClick={() => setNetworkFilter("all")}
-            >
-              Show All Networks
-            </Chip>
-          )}
         </div>
       )}
     </div>

@@ -339,7 +339,8 @@ export async function withdrawFunds(username, amount, destinationAddress, txHash
         recipient_username: username,
         amount: -parseFloat(amount),
         tx_hash: txHash,
-        status: 'withdrawn'
+        status: 'withdrawn',
+        network: 'qie' // Mark as QIE network withdrawal
       }])
       .select()
       .single();
