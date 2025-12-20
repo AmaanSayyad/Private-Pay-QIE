@@ -6,10 +6,10 @@ import { isBackAtom } from "../../../store/payment-card-store.js";
 import { Button, Skeleton } from "@nextui-org/react";
 import { isCreateLinkDialogAtom } from "../../../store/dialog-store.js";
 import SquidLogo from "../../../assets/squidl-logo.svg?react";
-import { useAptos } from "../../../providers/AptosProvider.jsx";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { getPaymentLinks } from "../../../lib/supabase.js";
+import { useAptos } from "../../../providers/QIEWalletProvider.jsx";
 
 export const AVAILABLE_CARDS_BG = [
   "/assets/card-1.png",
@@ -32,7 +32,7 @@ export default function PaymentLinksDashboard({ user }) {
   const loadPaymentLinks = async () => {
     if (account) {
       // Get username
-      const savedUsername = localStorage.getItem(`aptos_username_${account}`);
+      const savedUsername = localStorage.getItem(`qie_username_${account}`);
       setUsername(savedUsername || account.slice(2, 8));
 
       // Get payment links from Supabase

@@ -3,7 +3,7 @@ import { Icons } from "../shared/Icons.jsx";
 import toast from "react-hot-toast";
 import { QRCode } from "react-qrcode-logo";
 import { useRef, useState, useEffect } from "react";
-import { useAptos } from "../../providers/AptosProvider.jsx";
+import { useAptos } from "../../providers/QIEWalletProvider.jsx";
 
 export default function QrDialog({ open, setOpen, qrUrl }) {
   const { account } = useAptos();
@@ -12,7 +12,7 @@ export default function QrDialog({ open, setOpen, qrUrl }) {
 
   useEffect(() => {
     if (account) {
-      const savedUsername = localStorage.getItem(`aptos_username_${account}`);
+      const savedUsername = localStorage.getItem(`qie_username_${account}`);
       setUsername(savedUsername || account.slice(2, 8));
     }
   }, [account]);
@@ -111,7 +111,8 @@ export default function QrDialog({ open, setOpen, qrUrl }) {
         <div className="flex flex-col items-center gap-2 py-2">
           <p className="text-sm text-gray-500">Supported Network</p>
           <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full">
-            <img src="/assets/aptos-logo.png" alt="Aptos Logo" className="h-5 w-auto object-contain" />
+            <img src="https://qie.digital/favicon.ico" alt="QIE Logo" className="h-5 w-auto object-contain" />
+            <span className="text-sm font-medium text-gray-700">QIE Testnet</span>
           </div>
         </div>
 

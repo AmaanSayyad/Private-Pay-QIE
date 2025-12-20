@@ -20,20 +20,19 @@ import { Spinner, Button } from '@nextui-org/react';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PhotonErrorBoundary from './PhotonErrorBoundary';
-import { useAptos } from '../../providers/AptosProvider';
 
 function PhotonWalletDisplayInner() {
   const { photonUser, isAuthenticated, walletAddress, isLoading, isEnabled, isDemo } = usePhoton();
-  const { account } = useAptos();
   const [copied, setCopied] = useState(false);
   const [username, setUsername] = useState('');
 
-  useEffect(() => {
-    if (account) {
-      const savedUsername = localStorage.getItem(`aptos_username_${account}`);
-      setUsername(savedUsername || account.slice(2, 8));
-    }
-  }, [account]);
+  // TODO: Replace with QIE wallet integration
+  // useEffect(() => {
+  //   if (account) {
+  //     const savedUsername = localStorage.getItem(`qie_username_${account}`);
+  //     setUsername(savedUsername || account.slice(2, 8));
+  //   }
+  // }, [account]);
 
   // Graceful degradation: Don't render if Photon is not configured
   if (!isEnabled) {
@@ -121,7 +120,7 @@ function PhotonWalletDisplayInner() {
   }
 
   if (!isAuthenticated || !photonUser) {
-    // Don't show onboarding if user hasn't connected Aptos wallet
+    // Don't show onboarding if user hasn't connected QIE wallet
     if (!account) {
       return null;
     }

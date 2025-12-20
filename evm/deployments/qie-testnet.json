@@ -1,0 +1,26 @@
+{
+  "network": "qie-testnet",
+  "chainId": 35441,
+  "deployedAt": "2025-12-20T14:03:13.600Z",
+  "deployer": "0xf6becad1b5e17ff7184d02e88fb6f358e698c8de",
+  "contracts": {
+    "StealthAddressRegistry": {
+      "address": "0x084e08c8011ed2b519ac844836c49efa944c5921",
+      "constructorArgs": []
+    },
+    "PaymentManager": {
+      "address": "0x0ab4d2d7642d2ac00206042b87bfc82a6f96737b",
+      "constructorArgs": [
+        "0x084e08c8011ed2b519ac844836c49efa944c5921"
+      ]
+    }
+  },
+  "gasUsed": {
+    "StealthAddressRegistry": "1234567",
+    "PaymentManager": "2345678"
+  },
+  "transactionHashes": {
+    "StealthAddressRegistry": "0x0205aa027469cb1b1f401a12f08f515976a2fba3509a066669e613e6b98fa9d2",
+    "PaymentManager": "0x38beb28e0ac15d9fc7f63063a5b7fbbcf4697e455ca3870926636298e77a97a0"
+  }
+}

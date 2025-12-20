@@ -12,7 +12,7 @@ console.log('PRIVATE_KEY:', process.env.PRIVATE_KEY);
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.27",
+    version: "0.8.19",
     settings: {
       viaIR: true,
       optimizer: {
@@ -22,6 +22,19 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
+    'sepolia': {
+      url: "https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 11155111,
+      gasPrice: 20000000000, // 20 gwei
+    },
+    'qie-testnet': {
+      url: "https://rpc1testnet.qie.digital/",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 35441, // QIE testnet chain ID (tahmin)
+      gasPrice: 20000000000, // 20 gwei
+      gas: 8000000,
+    },
     'sapphire-testnet': {
       // This is Testnet! If you want Mainnet, add a new network config item.
       url: "https://testnet.sapphire.oasis.io",

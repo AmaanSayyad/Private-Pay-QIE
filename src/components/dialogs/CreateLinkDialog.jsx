@@ -13,12 +13,14 @@ import Nounsies from "../shared/Nounsies.jsx";
 import { validateAlphanumeric } from "../../utils/string.js";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import { useAptos } from "../../providers/AptosProvider.jsx";
 import { CARDS_SCHEME } from "../home/dashboard/PaymentLinksDashboard.jsx";
 import SquidLogo from "../../assets/squidl-logo.svg?react";
 import { cnm } from "../../utils/style.js";
 import { createPaymentLink, getPaymentLinks } from "../../lib/supabase.js";
 import { usePhoton } from "../../providers/PhotonProvider.jsx";
+import { useAptos } from "../../providers/QIEWalletProvider.jsx";
+import { generateQIEPaymentLink, validateQIEPaymentLink } from "../../utils/qie-payment-links.js";
+import { generateMetaAddress } from "../../utils/stealth-crypto.js";
 
 const confettiConfig = {
   angle: 90, // Angle at which the confetti will explode
@@ -44,7 +46,7 @@ export default function CreateLinkDialog() {
   useEffect(() => {
     async function loadData() {
       if (account) {
-        const savedUsername = localStorage.getItem(`aptos_username_${account}`);
+        const savedUsername = localStorage.getItem(`qie_username_${account}`);
         setUsername(savedUsername || account.slice(2, 8));
         
         const paymentLinks = await getPaymentLinks(account);
@@ -129,22 +131,42 @@ function StepOne({
 
     try {
       // Get username from localStorage
-      const currentUsername = localStorage.getItem(`aptos_username_${account}`) || account?.slice(2, 8);
+      const currentUsername = localStorage.getItem(`qie_username_${account}`) || account?.slice(2, 8);
 
-      // Save payment link to Supabase
-      await createPaymentLink(account, currentUsername, alias);
+      // Generate QIE payment link with stealth address
+      const qiePaymentLink = generateQIEPaymentLink(account, alias, {
+        message: `Payment to ${currentUsername}`
+      });
+
+      // Validate the generated payment link
+      const validation = validateQIEPaymentLink(qiePaymentLink);
+      if (!validation.isValid) {
+        console.error('Payment link validation failed:', validation.errors);
+        return toast.error("Failed to generate secure payment link");
+      }
+
+      // Save payment link to Supabase with QIE stealth address data
+      await createPaymentLink(account, currentUsername, alias, {
+        metaAddress: qiePaymentLink.metaAddress,
+        stealthData: qiePaymentLink.stealthData,
+        qrData: qiePaymentLink.qrData,
+        chainId: qiePaymentLink.chainId,
+        network: qiePaymentLink.network
+      });
 
       // Get updated count
       const paymentLinks = await getPaymentLinks(account);
       setInitialAliasCount(paymentLinks.length);
 
-      toast.success("Your payment link has been created!");
+      toast.success("Your QIE payment link has been created!");
       
       // Track unrewarded event for attribution
-      trackUnrewardedEvent("payment_link_created", {
+      trackUnrewardedEvent("qie_payment_link_created", {
         alias: alias,
         username: currentUsername,
         totalLinks: paymentLinks.length,
+        hasStealthAddress: true,
+        chainId: qiePaymentLink.chainId
       });
       
       // Trigger a custom event to refresh the dashboard
@@ -152,6 +174,7 @@ function StepOne({
       
       setStep("two");
     } catch (error) {
+      console.error('Error creating QIE payment link:', error);
       if (error.message?.includes('duplicate')) {
         toast.error("This alias already exists");
       } else {

@@ -9,10 +9,11 @@ import PaymentLinksDashboard from "./PaymentLinksDashboard.jsx";
 import toast from "react-hot-toast";
 import { Icons } from "../../shared/Icons.jsx";
 import { useNavigate } from "react-router-dom";
-import { useAptos } from "../../../providers/AptosProvider.jsx";
 import { getUserBalance, registerUser } from "../../../lib/supabase.js";
 import PhotonWalletDisplay from "../../shared/PhotonWalletDisplay.jsx";
 import BalanceChart from "./BalanceChart.jsx";
+import { useAptos } from "../../../providers/QIEWalletProvider.jsx";
+import { formatQIEAmount } from "../../../utils/qie-utils.js";
 
 export default function Dashboard() {
   const [openQr, setOpenQr] = useState(false);
@@ -23,7 +24,7 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadBalance() {
       if (account) {
-        const username = localStorage.getItem(`aptos_username_${account}`) || account.slice(2, 8);
+        const username = localStorage.getItem(`qie_username_${account}`) || account.slice(2, 8);
         
         // Register user if not exists
         try {
@@ -83,7 +84,7 @@ function ReceiveCard({ setOpenQr, user, isLoading }) {
   // Load username from localStorage
   useEffect(() => {
     if (account) {
-      const savedUsername = localStorage.getItem(`aptos_username_${account}`);
+      const savedUsername = localStorage.getItem(`qie_username_${account}`);
       if (savedUsername) {
         setUsername(savedUsername);
       } else {
@@ -96,7 +97,7 @@ function ReceiveCard({ setOpenQr, user, isLoading }) {
 
   const handleSaveUsername = () => {
     if (username && account) {
-      localStorage.setItem(`aptos_username_${account}`, username);
+      localStorage.setItem(`qie_username_${account}`, username);
       setIsEditingUsername(false);
       toast.success("Username saved!", {
         duration: 1000,
@@ -264,9 +265,9 @@ function MergedBalanceCard({ balance, isLoading }) {
         ) : (
           <div className="flex items-baseline gap-2 mb-2">
             <p className="text-4xl font-bold text-primary">
-              {balance.toFixed(4)}
+              {formatQIEAmount(balance.toString(), false, 6)}
             </p>
-            <p className="text-lg font-semibold text-gray-600">APT</p>
+            <p className="text-lg font-semibold text-gray-600">QIE</p>
           </div>
         )}
       </div>

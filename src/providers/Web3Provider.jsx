@@ -1,12 +1,9 @@
 import { getSigner, getWeb3Provider } from "@dynamic-labs/ethers-v6";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
-import {
-  wrapEthersProvider,
-  wrapEthersSigner,
-} from "@oasisprotocol/sapphire-ethers-v6";
 import { ethers } from "ethers";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { CONTRACT_ADDRESS, customEvmNetworks } from "../config";
+import { QIE_CONFIG } from "../config/qie-config.js";
+import { customEvmNetworks } from "../config";
 import ContractABI from "../abi/StealthSigner.json";
 import toast from "react-hot-toast";
 import { sleep } from "../utils/process.js";
@@ -49,7 +46,7 @@ export default function Web3Provider({ children }) {
 
   const isInitiating = useRef(false);
 
-  const oasis = customEvmNetworks.find((chain) => chain.group === "oasis");
+  const qie = customEvmNetworks.find((chain) => chain.group === "qie");
 
   async function init() {
     if (isInitiating.current || !primaryWallet) return;
@@ -57,16 +54,16 @@ export default function Web3Provider({ children }) {
     try {
       const _provider = await getWeb3Provider(primaryWallet);
       const _signer = await getSigner(primaryWallet);
-      const wrappedProvider = wrapEthersProvider(_provider);
-      const wrappedSigner = wrapEthersSigner(_signer);
+      
+      // Use QIE contracts directly without Sapphire wrapping
       const contract = new ethers.Contract(
-        CONTRACT_ADDRESS,
+        QIE_CONFIG.contracts.StealthAddressRegistry.address,
         ContractABI.abi,
-        wrappedSigner
+        _signer
       );
 
-      setProvider(wrappedProvider);
-      setSigner(wrappedSigner);
+      setProvider(_provider);
+      setSigner(_signer);
       setContract(contract);
       setLoaded(true);
 
@@ -90,17 +87,17 @@ export default function Web3Provider({ children }) {
     try {
       const network = await provider?.getNetwork();
 
-      if (network?.chainId !== oasis.chainId) {
+      if (network?.chainId !== qie.chainId) {
         if (primaryWallet?.connector?.supportsNetworkSwitching()) {
           try {
-            await primaryWallet.switchNetwork(oasis.chainId);
+            await primaryWallet.switchNetwork(qie.chainId);
 
             await init();
             return;
           } catch (error) {
             console.error("Error switching network:", error);
             toast.error(
-              `Failed to switch network. Please switch to ${oasis.name} manually.`
+              `Failed to switch network. Please switch to ${qie.name} manually.`
             );
             await sleep(2000);
 
@@ -109,14 +106,14 @@ export default function Web3Provider({ children }) {
           }
         } else {
           toast.error(
-            `Network switching not supported. Please switch to ${oasis.name} manually.`
+            `Network switching not supported. Please switch to ${qie.name} manually.`
           );
           await sleep(2000);
           handleLogOut();
           return;
         }
       } else {
-        toast.info(`Already connected to ${oasis.name} network.`);
+        toast.info(`Already connected to ${qie.name} network.`);
         await init();
         return;
       }

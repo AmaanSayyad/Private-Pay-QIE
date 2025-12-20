@@ -2,19 +2,19 @@ import { Button, Input, Spinner } from "@nextui-org/react";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { useLoaderData, useParams } from "react-router-dom";
-import { useAptos } from "../../providers/AptosProvider.jsx";
 import { getPaymentLinkByAlias, getUserByUsername, recordPayment } from "../../lib/supabase.js";
-import { sendAptTransfer } from "../../lib/aptos.js";
 import { usePhoton } from "../../providers/PhotonProvider.jsx";
+import { useAptos } from "../../providers/QIEWalletProvider.jsx";
+import { sendQIETransfer } from "../../lib/qie/qieTransactionService.js";
 import SuccessDialog from "../dialogs/SuccessDialog.jsx";
 import { Icons } from "../shared/Icons.jsx";
+import { getQIETransactionUrl } from "../../utils/qie-utils.js";
 
 const TREASURY_WALLET = import.meta.env.VITE_TREASURY_WALLET_ADDRESS;
 
 export default function Payment() {
   const loaderData = useLoaderData();
   const { alias_url } = useParams();
-  const { account, isConnected, connect } = useAptos();
   const { trackRewardedEvent, trackUnrewardedEvent } = usePhoton();
 
   const alias = loaderData ? loaderData.subdomain : alias_url;
@@ -27,6 +27,9 @@ export default function Payment() {
   const [openSuccess, setOpenSuccess] = useState(false);
   const [successData, setSuccessData] = useState(null);
   const [error, setError] = useState(null);
+
+  // QIE wallet integration
+  const { account, isConnected, connect } = useAptos();
 
   // Fetch payment link data from Supabase
   useEffect(() => {
@@ -97,7 +100,7 @@ export default function Payment() {
     }
 
     if (!isConnected || !account) {
-      toast.error("Please connect your Aptos wallet first");
+      toast.error("Please connect your QIE wallet first");
       return;
     }
 
@@ -115,8 +118,8 @@ export default function Payment() {
 
     setIsSending(true);
     try {
-      // Send APT to treasury wallet
-      const result = await sendAptTransfer({
+      // Send QIE to treasury wallet
+      const result = await sendQIETransfer({
         accountAddress: account,
         recipientAddress: TREASURY_WALLET,
         amount: parseFloat(amount),
@@ -144,7 +147,7 @@ export default function Payment() {
         (t) => (
           <div 
             onClick={() => {
-              window.open(result.explorerUrl, '_blank');
+              window.open(getQIETransactionUrl(result.hash), '_blank');
               toast.dismiss(t.id);
             }}
             className="cursor-pointer hover:underline"
@@ -156,9 +159,9 @@ export default function Payment() {
       );
 
       // Track rewarded event for successful payment
-      trackRewardedEvent("aptos_payment_link_payment_sent", {
+      trackRewardedEvent("qie_payment_link_payment_sent", {
         amount: parseFloat(amount),
-        tokenSymbol: "APT",
+        tokenSymbol: "QIE",
         recipientUsername: recipientUsername,
         alias: alias,
         txHash: result.hash.slice(0, 10),
@@ -168,11 +171,11 @@ export default function Payment() {
       const successDataObj = {
         type: "PRIVATE_TRANSFER",
         amount: parseFloat(amount),
-        chain: { name: "Aptos", id: "aptos" },
+        chain: { name: "QIE", id: "qie" },
         token: { 
           nativeToken: { 
-            symbol: "APT", 
-            logo: "/assets/aptos-logo.png" 
+            symbol: "QIE", 
+            logo: "https://qie.digital/favicon.ico" 
           } 
         },
         destinationAddress: `${alias}.privatepay.me`,
@@ -258,7 +261,7 @@ export default function Payment() {
                 <div className="w-full flex flex-col gap-4">
                   <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
                     <p className="text-sm text-blue-800 text-center">
-                      Connect your Aptos wallet (Petra) to send a payment
+                      Connect your QIE wallet (MetaMask) to send a payment
                     </p>
                   </div>
                   <Button
@@ -266,7 +269,7 @@ export default function Payment() {
                     className="bg-primary text-white font-bold py-5 px-6 h-16 w-full rounded-[32px]"
                     size="lg"
                   >
-                    Connect Aptos Wallet
+                    Connect QIE Wallet
                   </Button>
                 </div>
               ) : (
@@ -288,7 +291,7 @@ export default function Payment() {
 
                   {/* Amount Input */}
                   <Input
-                    label="Amount (APT)"
+                    label="Amount (QIE)"
                     type="number"
                     placeholder="0.01"
                     value={amount}
@@ -310,7 +313,7 @@ export default function Payment() {
                     className="bg-primary text-white font-bold py-5 px-6 h-16 w-full rounded-[32px]"
                     size="lg"
                   >
-                    {isSending ? "Sending..." : `Send ${amount || "0"} APT`}
+                    {isSending ? "Sending..." : `Send ${amount || "0"} QIE`}
                   </Button>
 
                   {/* Info */}

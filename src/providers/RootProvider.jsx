@@ -2,7 +2,7 @@ import { NextUIProvider } from "@nextui-org/react";
 import DynamicProvider from "./DynamicProvider.jsx";
 import AuthProvider from "./AuthProvider.jsx";
 import Web3Provider from "./Web3Provider.jsx";
-import AptosProvider from "./AptosProvider.jsx";
+import QIEWalletProvider from "./QIEWalletProvider.jsx";
 import PhotonProvider from "./PhotonProvider.jsx";
 import PhotonErrorBoundary from "../components/shared/PhotonErrorBoundary.jsx";
 import { SWRConfig } from "swr";
@@ -19,7 +19,7 @@ export default function RootProvider({ children }) {
       }}
     >
       <NextUIProvider>
-        <AptosProvider isTestnet={isTestnet}>
+        <QIEWalletProvider>
           <DynamicProvider>
             <Web3Provider>
               <AuthProvider>
@@ -37,7 +37,7 @@ export default function RootProvider({ children }) {
               </AuthProvider>
             </Web3Provider>
           </DynamicProvider>
-        </AptosProvider>
+        </QIEWalletProvider>
       </NextUIProvider>
     </SWRConfig>
   );

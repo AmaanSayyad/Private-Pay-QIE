@@ -6,13 +6,20 @@ This implementation plan converts the existing Aptos-based PrivatePay applicatio
 
 ## Task List
 
-- [ ] 1. Setup QIE development environment and smart contracts
+- [x] 1. Setup QIE development environment and smart contracts
+
+
+
+
+
   - Create QIE testnet configuration
   - Set up Hardhat project for Solidity contracts
   - Deploy stealth address contracts to QIE testnet
   - _Requirements: 2.1, 7.1, 7.2_
 
-- [ ] 1.1 Create Solidity smart contracts for QIE
+- [x] 1.1 Create Solidity smart contracts for QIE
+
+
   - Write StealthAddressRegistry.sol contract
   - Write PaymentManager.sol contract
   - Add comprehensive error handling and events
@@ -22,7 +29,9 @@ This implementation plan converts the existing Aptos-based PrivatePay applicatio
   - **Property 1: QIE Network Isolation**
   - **Validates: Requirements 2.1**
 
-- [ ] 1.3 Deploy contracts to QIE testnet
+- [x] 1.3 Deploy contracts to QIE testnet
+
+
   - Configure Hardhat for QIE testnet deployment
   - Deploy and verify contracts on QIE explorer
   - Store contract addresses in configuration
@@ -32,13 +41,20 @@ This implementation plan converts the existing Aptos-based PrivatePay applicatio
   - **Property 5: QIE Contract Integration**
   - **Validates: Requirements 2.2, 2.4**
 
-- [ ] 2. Remove all Aptos dependencies and configurations
+- [x] 2. Remove all Aptos dependencies and configurations
+
+
+
+
+
   - Remove @aptos-labs/ts-sdk from package.json
   - Remove all Aptos-related imports and code
   - Delete aptos/ directory and Move contracts
   - _Requirements: 1.4_
 
-- [ ] 2.1 Clean up Aptos-specific files and folders
+- [x] 2.1 Clean up Aptos-specific files and folders
+
+
   - Delete aptos/ directory completely
   - Remove Aptos configuration files
   - Clean up any Aptos references in documentation
@@ -48,13 +64,18 @@ This implementation plan converts the existing Aptos-based PrivatePay applicatio
   - **Property 4: Aptos Dependency Elimination**
   - **Validates: Requirements 1.4**
 
-- [ ] 3. Install and configure QIE/EVM dependencies
+- [x] 3. Install and configure QIE/EVM dependencies
+
+
+
+
   - Add ethers.js for blockchain interaction
   - Add Hardhat for smart contract development
   - Update wallet connection libraries for MetaMask
   - _Requirements: 1.1, 1.2_
 
-- [ ] 3.1 Update package.json with QIE dependencies
+- [x] 3.1 Update package.json with QIE dependencies
+
   - Install ethers.js, @metamask/sdk, hardhat
   - Remove Aptos SDK and related packages
   - Update development dependencies for Solidity
@@ -64,19 +85,28 @@ This implementation plan converts the existing Aptos-based PrivatePay applicatio
   - **Property 2: QIE Wallet Compatibility**
   - **Validates: Requirements 1.2**
 
-- [ ] 4. Update frontend for QIE network integration
+- [x] 4. Update frontend for QIE network integration
+
+
+
+
+
   - Replace Petra wallet with MetaMask integration
   - Update network configuration for QIE testnet
   - Modify transaction signing for EVM format
   - _Requirements: 1.2, 1.3, 5.1, 5.2_
 
-- [ ] 4.1 Implement MetaMask wallet connection
+- [x] 4.1 Implement MetaMask wallet connection
+
+
   - Create QIE network configuration for MetaMask
   - Implement wallet connection and account management
   - Add network switching functionality
   - _Requirements: 1.2, 5.2_
 
-- [ ] 4.2 Update UI components for QIE branding
+- [x] 4.2 Update UI components for QIE branding
+
+
   - Replace Aptos branding with QIE branding
   - Update network information displays
   - Change token symbols from APT to QIE
@@ -86,7 +116,9 @@ This implementation plan converts the existing Aptos-based PrivatePay applicatio
   - **Property 3: QIE Branding Consistency**
   - **Validates: Requirements 1.3, 5.1, 5.2, 5.4**
 
-- [ ] 4.4 Update transaction and explorer links
+- [x] 4.4 Update transaction and explorer links
+
+
   - Replace Aptos explorer URLs with QIE explorer
   - Update transaction link generation
   - Modify address display formats for EVM
@@ -96,13 +128,20 @@ This implementation plan converts the existing Aptos-based PrivatePay applicatio
   - **Property 15: QIE Explorer Integration**
   - **Validates: Requirements 5.3**
 
-- [ ] 5. Migrate stealth address cryptography for QIE
+- [x] 5. Migrate stealth address cryptography for QIE
+
+
+
+
+
   - Adapt ECDH implementation for EVM addresses
   - Update address derivation for QIE format
   - Modify key generation for EVM compatibility
   - _Requirements: 2.5, 3.1, 3.3_
 
-- [ ] 5.1 Update cryptographic utilities for QIE
+- [x] 5.1 Update cryptographic utilities for QIE
+
+
   - Modify stealth address generation for EVM format
   - Update ECDH shared secret computation
   - Adapt private key derivation for QIE addresses
@@ -116,7 +155,9 @@ This implementation plan converts the existing Aptos-based PrivatePay applicatio
   - **Property 8: QIE Address Format Compliance**
   - **Validates: Requirements 3.1, 4.2, 6.4**
 
-- [ ] 5.4 Update payment link generation for QIE
+- [x] 5.4 Update payment link generation for QIE
+
+
   - Modify stealth address generation in payment links
   - Update QR code generation for QIE addresses
   - Test payment link functionality end-to-end
@@ -126,19 +167,28 @@ This implementation plan converts the existing Aptos-based PrivatePay applicatio
   - **Property 10: QIE Payment Link Generation**
   - **Validates: Requirements 3.4**
 
-- [ ] 6. Update backend services for QIE blockchain
+- [x] 6. Update backend services for QIE blockchain
+
+
+
+
+
   - Replace Aptos SDK with ethers.js in backend
   - Update blockchain service for QIE RPC endpoints
   - Modify event monitoring for QIE smart contracts
   - _Requirements: 6.1, 6.2, 6.3, 6.5_
 
-- [ ] 6.1 Implement QIE blockchain service
+- [x] 6.1 Implement QIE blockchain service
+
+
   - Create QIEBlockchainService class with ethers.js
   - Implement contract interaction methods
   - Add transaction monitoring and validation
   - _Requirements: 6.1, 6.2, 6.5_
 
-- [ ] 6.2 Update event monitoring system
+- [x] 6.2 Update event monitoring system
+
+
   - Replace Aptos event monitoring with QIE events
   - Implement real-time event listening
   - Update database storage for QIE transaction data
@@ -152,7 +202,9 @@ This implementation plan converts the existing Aptos-based PrivatePay applicatio
   - **Property 6: QIE Event System**
   - **Validates: Requirements 2.3, 4.1, 6.3**
 
-- [ ] 6.5 Update payment processing for QIE
+- [x] 6.5 Update payment processing for QIE
+
+
   - Implement QIE token transfers
   - Update gas fee calculation and handling
   - Modify transaction format processing
@@ -166,19 +218,28 @@ This implementation plan converts the existing Aptos-based PrivatePay applicatio
   - **Property 18: QIE Transaction Processing**
   - **Validates: Requirements 6.5**
 
-- [ ] 7. Update database schema and configuration
+- [x] 7. Update database schema and configuration
+
+
+
+
+
   - Add QIE-specific columns to existing tables
   - Create QIE network and contract configuration tables
   - Update environment variables for QIE endpoints
   - _Requirements: 7.2, 7.3_
 
-- [ ] 7.1 Update database schema for QIE
+- [x] 7.1 Update database schema for QIE
+
+
   - Add QIE address columns to user and payment tables
   - Create qie_contracts and qie_network_config tables
   - Add gas-related columns for QIE transactions
   - _Requirements: 6.2, 7.2_
 
-- [ ] 7.2 Update environment configuration
+- [x] 7.2 Update environment configuration
+
+
   - Replace Aptos RPC URLs with QIE testnet endpoints
   - Add QIE contract addresses to environment
   - Update wallet configuration parameters
@@ -188,13 +249,20 @@ This implementation plan converts the existing Aptos-based PrivatePay applicatio
   - **Property 19: QIE Configuration Consistency**
   - **Validates: Requirements 7.2, 7.3, 7.4, 7.5**
 
-- [ ] 8. Implement fund withdrawal functionality for QIE
+- [x] 8. Implement fund withdrawal functionality for QIE
+
+
+
+
+
   - Update stealth private key computation for EVM
   - Implement QIE token withdrawal from stealth addresses
   - Add balance checking and display for QIE tokens
   - _Requirements: 4.2, 4.3, 4.4_
 
-- [ ] 8.1 Implement QIE fund withdrawal
+- [x] 8.1 Implement QIE fund withdrawal
+
+
   - Create withdrawal transaction signing for EVM
   - Update stealth private key derivation
   - Implement balance transfer to main QIE wallet
@@ -204,7 +272,9 @@ This implementation plan converts the existing Aptos-based PrivatePay applicatio
   - **Property 12: QIE Fund Withdrawal**
   - **Validates: Requirements 4.3**
 
-- [ ] 8.3 Update balance display for QIE tokens
+- [x] 8.3 Update balance display for QIE tokens
+
+
   - Show QIE token balances with 18 decimal precision
   - Update token symbols and formatting
   - Add QIE price information if available

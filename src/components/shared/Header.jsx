@@ -4,8 +4,9 @@ import { Icons } from "./Icons.jsx";
 import Nounsies from "./Nounsies.jsx";
 import { useSetAtom } from "jotai";
 import { isCreateLinkDialogAtom } from "../../store/dialog-store.js";
-import { useAptos } from "../../providers/AptosProvider";
 import { useState } from "react";
+import { useAptos } from "../../providers/QIEWalletProvider.jsx";
+import { getQIEAddressUrl } from "../../utils/qie-utils.js";
 
 export default function Header() {
   const setCreateLinkModal = useSetAtom(isCreateLinkDialogAtom);
@@ -64,7 +65,7 @@ const UserProfileButton = () => {
         onClick={handleConnect}
         className="h-12 rounded-full bg-primary-50 text-primary font-medium px-6"
       >
-        Connect Aptos Wallet
+        Connect QIE Wallet
       </Button>
     );
   }
@@ -94,7 +95,7 @@ const UserProfileButton = () => {
                   <p className="text-sm font-medium text-gray-800 truncate">
                     {account?.slice(0, 6)}...{account?.slice(-4)}
                   </p>
-                  <p className="text-xs text-gray-500">Aptos Wallet</p>
+                  <p className="text-xs text-gray-500">QIE Wallet</p>
                 </div>
               </div>
 
@@ -112,7 +113,7 @@ const UserProfileButton = () => {
               <button
                 onClick={() => {
                   window.open(
-                    `https://explorer.aptoslabs.com/account/${account}?network=testnet`,
+                    getQIEAddressUrl(account),
                     "_blank"
                   );
                   setShowMenu(false);

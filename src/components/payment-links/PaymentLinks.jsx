@@ -9,7 +9,6 @@ import { Button, Spinner } from "@nextui-org/react";
 import { useAtom } from "jotai";
 import SquidLogo from "../../assets/squidl-logo.svg?react";
 import { isCreateLinkDialogAtom } from "../../store/dialog-store.js";
-import { useAptos } from "../../providers/AptosProvider.jsx";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { Icons } from "../shared/Icons.jsx";
@@ -19,22 +18,16 @@ import { getPaymentLinks } from "../../lib/supabase.js";
 export default function PaymentLinks() {
   const navigate = useNavigate();
   const [, setOpen] = useAtom(isCreateLinkDialogAtom);
-  const { account } = useAptos();
   const { trackUnrewardedEvent } = usePhoton();
   const [paymentLinks, setPaymentLinks] = useState([]);
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   const loadPaymentLinks = async () => {
-    if (account) {
-      const savedUsername = localStorage.getItem(`aptos_username_${account}`);
-      setUsername(savedUsername || account.slice(2, 8));
-
-      // Load from Supabase instead of localStorage
-      const links = await getPaymentLinks(account);
-      setPaymentLinks(links);
-      setIsLoading(false);
-    }
+    // TODO: Replace with QIE wallet integration
+    // For now, show empty state
+    setPaymentLinks([]);
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -49,7 +42,7 @@ export default function PaymentLinks() {
     return () => {
       window.removeEventListener('payment-links-updated', handleUpdate);
     };
-  }, [account]);
+  }, []);
 
   const handleDeleteLink = async (linkId) => {
     try {

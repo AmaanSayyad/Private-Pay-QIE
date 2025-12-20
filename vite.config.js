@@ -21,5 +21,9 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), svgr()],
     server: serverConfig,
+    test: {
+      environment: 'node',
+      globals: true
+    }
   };
 });

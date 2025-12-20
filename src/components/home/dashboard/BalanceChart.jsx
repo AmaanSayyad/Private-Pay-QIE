@@ -7,13 +7,14 @@ import {
   AreaChart,
   ResponsiveContainer,
 } from "recharts";
-import { useAptos } from "../../../providers/AptosProvider.jsx";
 import { Spinner } from "@nextui-org/react";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { safeGetJSON, safeSetJSON } from "../../../utils/localStorageUtils.js";
+import { useAptos } from "../../../providers/QIEWalletProvider.jsx";
+import { formatQIEAmount } from "../../../utils/qie-utils.js";
 
-const BALANCE_HISTORY_KEY = 'aptos_balance_history';
+const BALANCE_HISTORY_KEY = 'qie_balance_history';
 
 // Get balance history from localStorage
 function getBalanceHistory(account) {
@@ -49,15 +50,15 @@ function updateBalanceHistory(account, newBalance) {
   // Only update if balance actually changed (deposit or withdrawal)
   if (todayIndex >= 0) {
     const oldBalance = history[todayIndex].balance;
-    // Update today's balance only if it changed
-    if (Math.abs(oldBalance - newBalance) > 0.0001) {
-      history[todayIndex].balance = parseFloat(newBalance.toFixed(4));
+    // Update today's balance only if it changed (using higher precision for QIE)
+    if (Math.abs(oldBalance - newBalance) > 0.000001) { // 6 decimal precision for QIE
+      history[todayIndex].balance = parseFloat(newBalance.toFixed(6));
     }
   } else {
     // Add new entry for today with the new balance
     history.push({
       date: today,
-      balance: parseFloat(newBalance.toFixed(4)),
+      balance: parseFloat(newBalance.toFixed(6)), // 6 decimal precision for QIE
     });
     
     // Keep only last 30 days
@@ -88,7 +89,7 @@ function generateChartData(account, currentBalance) {
       const balance = dateStr === today ? (currentBalance || 0) : 0;
       history.push({
         date: dateStr,
-        balance: parseFloat(balance.toFixed(4)),
+        balance: parseFloat(balance.toFixed(6)), // 6 decimal precision for QIE
       });
     }
     history.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -107,18 +108,18 @@ function generateChartData(account, currentBalance) {
       // New day - start with yesterday's balance, then update to current
       history.push({
         date: today,
-        balance: parseFloat((currentBalance || 0).toFixed(4)),
+        balance: parseFloat((currentBalance || 0).toFixed(6)), // 6 decimal precision for QIE
       });
     } else if (todayIndex >= 0) {
       // Update today's balance - this is where growth happens
       // If balance increased, it shows as upward trend
       // If balance decreased, it shows as downward trend
-      history[todayIndex].balance = parseFloat((currentBalance || 0).toFixed(4));
+      history[todayIndex].balance = parseFloat((currentBalance || 0).toFixed(6)); // 6 decimal precision for QIE
     } else {
       // No yesterday data, just add today
       history.push({
         date: today,
-        balance: parseFloat((currentBalance || 0).toFixed(4)),
+        balance: parseFloat((currentBalance || 0).toFixed(6)), // 6 decimal precision for QIE
       });
     }
     
@@ -166,7 +167,7 @@ function generateChartData(account, currentBalance) {
       
       data.push({
         date: dateStr,
-        balance: parseFloat(previousBalance.toFixed(4)),
+        balance: parseFloat(previousBalance.toFixed(6)), // 6 decimal precision for QIE
       });
     }
   }
@@ -257,11 +258,11 @@ export default function BalanceChart({ balance }) {
             tickMargin={10}
           />
           <YAxis 
-            tickFormatter={(value) => `${value.toFixed(2)}`}
+            tickFormatter={(value) => formatQIEAmount(value.toString(), false, 4)}
             style={{ fontSize: '11px', fill: '#6b7280' }}
             tickLine={false}
             axisLine={false}
-            width={60}
+            width={80}
             domain={[0, maxBalance * 1.1 || 'auto']}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '5 5' }} />
@@ -295,8 +296,8 @@ const CustomTooltip = ({ active, payload }) => {
           </p>
         </div>
         <div className="flex items-baseline gap-2 mt-1">
-          <p className="text-2xl font-bold text-gray-900">{balance.toFixed(4)}</p>
-          <p className="text-sm font-semibold text-indigo-600">APT</p>
+          <p className="text-2xl font-bold text-gray-900">{formatQIEAmount(balance.toString(), false, 6)}</p>
+          <p className="text-sm font-semibold text-indigo-600">QIE</p>
         </div>
       </div>
     );

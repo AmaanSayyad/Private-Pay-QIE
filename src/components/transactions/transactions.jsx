@@ -3,29 +3,18 @@ import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { shortenId } from "../../utils/formatting-utils.js";
 import { Spinner } from "@nextui-org/react";
-import { useAptos } from "../../providers/AptosProvider.jsx";
 import { getUserPayments } from "../../lib/supabase.js";
 
 export default function Transactions() {
-  const { account } = useAptos();
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [username, setUsername] = useState("");
 
   const loadTransactions = async () => {
-    if (!account) {
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      const savedUsername = localStorage.getItem(`aptos_username_${account}`);
-      const currentUsername = savedUsername || account.slice(2, 8);
-      setUsername(currentUsername);
-
-      // Get payments from Supabase
-      const payments = await getUserPayments(currentUsername);
-      setTransactions(payments);
+      // TODO: Replace with QIE wallet integration
+      // For now, show empty state
+      setTransactions([]);
     } catch (error) {
       console.error("Error loading transactions:", error);
     } finally {
@@ -42,7 +31,7 @@ export default function Transactions() {
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [account]);
+  }, []);
 
   const groupedTransactions = useMemo(() => {
     return transactions?.reduce((acc, tx) => {
@@ -78,15 +67,15 @@ export default function Transactions() {
                 if (isWithdrawal) {
                   title = "Withdrawal";
                   subtitle = "to your wallet";
-                  value = `-${Math.abs(tx.amount).toFixed(4)} APT`;
+                  value = `-${Math.abs(tx.amount).toFixed(4)} QIE`;
                 } else if (isSent) {
                   title = "Sent Payment";
                   subtitle = `to ${tx.recipient_username}.privatepay.me`;
-                  value = `-${Math.abs(tx.amount).toFixed(4)} APT`;
+                  value = `-${Math.abs(tx.amount).toFixed(4)} QIE`;
                 } else {
                   title = `${username}.privatepay.me`;
                   subtitle = `from ${shortenId(tx.sender_address)}`;
-                  value = `+${Math.abs(tx.amount).toFixed(4)} APT`;
+                  value = `+${Math.abs(tx.amount).toFixed(4)} QIE`;
                 }
                 
                 return (
@@ -94,7 +83,7 @@ export default function Transactions() {
                     key={idx}
                     isNounsies
                     addressNounsies={`${username}.privatepay.me`}
-                    chainImg="https://aptos.dev/static/images/aptos-logo-round.svg"
+                    chainImg="https://qie.digital/favicon.ico"
                     title={title}
                     subtitle={subtitle}
                     value={value}
@@ -109,7 +98,7 @@ export default function Transactions() {
         <div className="w-full flex flex-col items-center justify-center min-h-64 gap-2">
           <p className="text-gray-600">No transactions found</p>
           <p className="text-sm text-gray-400">
-            Transactions will appear here when you receive or withdraw APT
+            Transactions will appear here when you receive or withdraw QIE
           </p>
         </div>
       )}

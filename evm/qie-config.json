@@ -1,0 +1,31 @@
+{
+  "network": {
+    "name": "QIE Testnet",
+    "chainId": 4660,
+    "rpcUrl": "https://testnet-rpc.qie.digital",
+    "explorerUrl": "https://testnet-explorer.qie.digital",
+    "nativeCurrency": {
+      "name": "QIE",
+      "symbol": "QIE",
+      "decimals": 18
+    }
+  },
+  "contracts": {
+    "StealthAddressRegistry": {
+      "address": "",
+      "deploymentBlock": 0
+    },
+    "PaymentManager": {
+      "address": "",
+      "deploymentBlock": 0
+    }
+  },
+  "deployment": {
+    "deployer": "",
+    "deployedAt": "",
+    "gasUsed": {
+      "StealthAddressRegistry": 0,
+      "PaymentManager": 0
+    }
+  }
+}

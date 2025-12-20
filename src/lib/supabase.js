@@ -348,15 +348,26 @@ export async function getUserByUsername(username) {
 /**
  * Create payment link
  */
-export async function createPaymentLink(walletAddress, username, alias) {
+export async function createPaymentLink(walletAddress, username, alias, qieData = null) {
   try {
+    const linkData = {
+      wallet_address: walletAddress,
+      username,
+      alias
+    };
+
+    // Add QIE-specific data if provided
+    if (qieData) {
+      linkData.meta_address = qieData.metaAddress;
+      linkData.stealth_data = qieData.stealthData;
+      linkData.qr_data = qieData.qrData;
+      linkData.chain_id = qieData.chainId;
+      linkData.network = qieData.network;
+    }
+
     const { data, error } = await supabase
       .from('payment_links')
-      .insert([{
-        wallet_address: walletAddress,
-        username,
-        alias
-      }])
+      .insert([linkData])
       .select()
       .single();
 

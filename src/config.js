@@ -1,4 +1,5 @@
 import StealthSignerABI from "./abi/StealthSigner.json";
+import { QIE_CONFIG } from "./config/qie-config.js";
 
 // export const CONTRACT_ADDRESS = "0x6b84f47Ef5c73AA8A9bc0D7Ff18ba3487aA5C1D3";
 export const CONTRACT_ADDRESS = import.meta.env.VITE_SQUIDL_STEALTHSIGNER_CONTRACT_ADDRESS;
@@ -72,6 +73,19 @@ export const MAINNET_CHAINS = [
 ];
 
 export const TESTNET_CHAINS = [
+  // QIE Testnet (Primary network)
+  {
+    blockExplorerUrls: [QIE_CONFIG.blockExplorerUrls[0]],
+    chainId: QIE_CONFIG.chainId,
+    chainName: QIE_CONFIG.chainName,
+    iconUrls: ["https://qie.digital/favicon.ico"],
+    name: QIE_CONFIG.chainName,
+    nativeCurrency: QIE_CONFIG.nativeCurrency,
+    networkId: QIE_CONFIG.chainId,
+    rpcUrls: QIE_CONFIG.rpcUrls,
+    vanityName: QIE_CONFIG.chainName,
+    group: "qie",
+  },
   // ethereum sepolia
   {
     blockExplorerUrls: ["https://sepolia.etherscan.io"], // Explorer for the Testnet
@@ -87,23 +101,6 @@ export const TESTNET_CHAINS = [
     networkId: 0xaa36a7,
     rpcUrls: ["https://sepolia.drpc.org"],
     vanityName: "Ethereum Sepolia",
-  },
-  // Aptos Testnet (Note: Aptos uses different wallet system, not EVM)
-  {
-    blockExplorerUrls: ["https://explorer.aptoslabs.com/?network=testnet"],
-    chainId: 2,
-    chainName: "Aptos Testnet",
-    iconUrls: ["https://aptos.dev/static/images/aptos-logo-round.svg"],
-    name: "Aptos Testnet",
-    nativeCurrency: {
-      name: "Aptos",
-      symbol: "APT",
-      decimals: 8,
-    },
-    networkId: 2,
-    rpcUrls: ["https://fullnode.testnet.aptoslabs.com"],
-    vanityName: "Aptos Testnet",
-    isAptos: true,
   },
   // polygon amoy
   {
@@ -160,6 +157,18 @@ export const PHOTON_CONFIG = {
 };
 
 export const CHAINS = [
+  // QIE Testnet
+  {
+    id: QIE_CONFIG.chainId,
+    name: QIE_CONFIG.chainName,
+    chainlistUrl: "https://chainlist.org",
+    rpcUrl: QIE_CONFIG.rpcUrls[0],
+    nativeToken: QIE_CONFIG.nativeCurrency.symbol,
+    blockExplorerUrl: QIE_CONFIG.blockExplorerUrls[0],
+    imageUrl: "https://qie.digital/favicon.ico",
+    isTestnet: true,
+    network: "testnet",
+  },
   // Mainnet Chains
   {
     id: 1,
@@ -229,30 +238,5 @@ export const CHAINS = [
     isTestnet: true,
     network: "testnet",
     compatibility: [137],
-  },
-  // Aptos Chains
-  {
-    id: 2, // Aptos Testnet
-    name: "Aptos Testnet",
-    chainlistUrl: "https://chainlist.org",
-    rpcUrl: "https://fullnode.testnet.aptoslabs.com",
-    nativeToken: "APT",
-    blockExplorerUrl: "https://explorer.aptoslabs.com/?network=testnet",
-    imageUrl: "https://aptos.dev/static/images/aptos-logo-round.svg",
-    isTestnet: true,
-    network: "testnet",
-    isAptos: true, // Flag to identify Aptos chains
-  },
-  {
-    id: 1, // Aptos Mainnet
-    name: "Aptos Mainnet",
-    chainlistUrl: "https://chainlist.org",
-    rpcUrl: "https://fullnode.mainnet.aptoslabs.com",
-    nativeToken: "APT",
-    blockExplorerUrl: "https://explorer.aptoslabs.com/?network=mainnet",
-    imageUrl: "https://aptos.dev/static/images/aptos-logo-round.svg",
-    isTestnet: false,
-    network: "mainnet",
-    isAptos: true,
   },
 ];
