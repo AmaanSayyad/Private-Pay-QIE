@@ -166,6 +166,120 @@ export const getQIEExplorerLink = (hash, type = 'tx', text = null) => {
   };
 };
 
+/**
+ * Get network display information
+ * @param {string} network - Network identifier ('qie' or 'aptos')
+ * @returns {Object} Network display information
+ */
+export const getNetworkDisplayInfo = (network = 'qie') => {
+  const networkInfo = {
+    qie: {
+      symbol: 'QIE',
+      name: 'QIE Network',
+      icon: 'https://qie.digital/favicon.ico',
+      color: 'primary',
+      explorerUrl: 'https://testnet.qie.digital',
+      isEVM: true
+    },
+    aptos: {
+      symbol: 'APT',
+      name: 'Aptos Network',
+      icon: 'https://aptoslabs.com/favicon.ico',
+      color: 'warning',
+      explorerUrl: 'https://explorer.aptoslabs.com',
+      isEVM: false
+    }
+  };
+
+  return networkInfo[network.toLowerCase()] || networkInfo.qie;
+};
+
+/**
+ * Determine transaction network from transaction data
+ * @param {Object} transaction - Transaction object
+ * @returns {string} Network identifier
+ */
+export const determineTransactionNetwork = (transaction) => {
+  // If network is explicitly set, use it
+  if (transaction.network) {
+    return transaction.network;
+  }
+
+  // If QIE-specific fields are present, it's a QIE transaction
+  if (transaction.qie_transaction_hash || transaction.qie_block_number || transaction.gas_used) {
+    return 'qie';
+  }
+
+  // If sender/recipient addresses are EVM format (0x...), it's likely QIE
+  if (transaction.sender_address?.startsWith('0x') || transaction.recipient_address?.startsWith('0x')) {
+    return 'qie';
+  }
+
+  // Default to QIE for new transactions, Aptos for legacy
+  return transaction.created_at && new Date(transaction.created_at) < new Date('2024-01-01') ? 'aptos' : 'qie';
+};
+
+/**
+ * Format transaction amount with network-specific symbol
+ * @param {number|string} amount - Transaction amount
+ * @param {string} network - Network identifier
+ * @param {boolean} isPositive - Whether amount is positive (received) or negative (sent)
+ * @returns {string} Formatted amount string
+ */
+export const formatTransactionAmount = (amount, network = 'qie', isPositive = true) => {
+  const networkInfo = getNetworkDisplayInfo(network);
+  const sign = isPositive ? '+' : '-';
+  const absAmount = Math.abs(parseFloat(amount));
+  
+  // Format with appropriate decimal places
+  const formattedAmount = absAmount.toFixed(4);
+  
+  return `${sign}${formattedAmount} ${networkInfo.symbol}`;
+};
+
+/**
+ * Get transaction explorer URL
+ * @param {string} txHash - Transaction hash
+ * @param {string} network - Network identifier
+ * @returns {string} Explorer URL
+ */
+export const getTransactionExplorerUrl = (txHash, network = 'qie') => {
+  const networkInfo = getNetworkDisplayInfo(network);
+  
+  if (network === 'qie') {
+    return `${networkInfo.explorerUrl}/tx/${txHash}`;
+  } else if (network === 'aptos') {
+    return `${networkInfo.explorerUrl}/txn/${txHash}`;
+  }
+  
+  return `${networkInfo.explorerUrl}/tx/${txHash}`;
+};
+
+/**
+ * Check if transaction is from legacy Aptos network
+ * @param {Object} transaction - Transaction object
+ * @returns {boolean} True if transaction is from Aptos
+ */
+export const isLegacyAptosTransaction = (transaction) => {
+  return determineTransactionNetwork(transaction) === 'aptos';
+};
+
+/**
+ * Get network indicator badge props
+ * @param {string} network - Network identifier
+ * @returns {Object} Badge props for UI components
+ */
+export const getNetworkBadgeProps = (network = 'qie') => {
+  const networkInfo = getNetworkDisplayInfo(network);
+  
+  return {
+    label: network.toUpperCase(),
+    color: networkInfo.color,
+    variant: 'flat',
+    size: 'sm'
+  };
+};
+
 export default {
   getQIETransactionUrl,
   getQIEAddressUrl,
@@ -179,4 +293,10 @@ export default {
   weiToQIE,
   getQIENetworkInfo,
   getQIEExplorerLink,
+  getNetworkDisplayInfo,
+  determineTransactionNetwork,
+  formatTransactionAmount,
+  getTransactionExplorerUrl,
+  isLegacyAptosTransaction,
+  getNetworkBadgeProps,
 };

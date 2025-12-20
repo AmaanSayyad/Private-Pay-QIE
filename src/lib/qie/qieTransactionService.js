@@ -229,6 +229,56 @@ export const estimateQIETransactionGas = async (transaction) => {
   }
 };
 
+/**
+ * Store QIE transaction with network marking
+ * @param {Object} transactionData - Transaction data to store
+ * @returns {Promise<Object>} Storage result
+ */
+export const storeQIETransaction = async (transactionData) => {
+  try {
+    // Ensure network is marked as 'qie'
+    const qieTransactionData = {
+      ...transactionData,
+      network: 'qie',
+      qie_transaction_hash: transactionData.hash || transactionData.qie_transaction_hash,
+      qie_block_number: transactionData.blockNumber || transactionData.qie_block_number,
+      gas_used: transactionData.gasUsed || transactionData.gas_used,
+      gas_price: transactionData.gasPrice || transactionData.gas_price,
+      effective_gas_price: transactionData.effectiveGasPrice || transactionData.effective_gas_price,
+    };
+
+    // Store in database (this would typically use a database service)
+    console.log('Storing QIE transaction:', qieTransactionData);
+    
+    return {
+      success: true,
+      transactionData: qieTransactionData
+    };
+  } catch (error) {
+    console.error('Error storing QIE transaction:', error);
+    throw error;
+  }
+};
+
+/**
+ * Mark legacy transactions as Aptos network
+ * @param {Array} transactions - Array of transaction objects
+ * @returns {Array} Transactions with network marking
+ */
+export const markLegacyTransactions = (transactions) => {
+  return transactions.map(tx => {
+    // If no network is specified and transaction is old, mark as Aptos
+    if (!tx.network && tx.created_at && new Date(tx.created_at) < new Date('2024-01-01')) {
+      return { ...tx, network: 'aptos' };
+    }
+    // If no network is specified and transaction is new, mark as QIE
+    if (!tx.network) {
+      return { ...tx, network: 'qie' };
+    }
+    return tx;
+  });
+};
+
 export default {
   sendQIETransfer,
   sendQIEStealthPayment,
@@ -239,4 +289,6 @@ export default {
   getQIEGasPriceRecommendations,
   calculateQIETransactionCost,
   estimateQIETransactionGas,
+  storeQIETransaction,
+  markLegacyTransactions,
 };

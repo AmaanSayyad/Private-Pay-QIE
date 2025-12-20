@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { markLegacyTransactions } from './qie/qieTransactionService.js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -184,14 +185,14 @@ export async function getUserBalance(username) {
 }
 
 /**
- * Get user payments (received and sent)
+ * Get user payments (received and sent) with network distinction
  */
 export async function getUserPayments(username) {
   try {
-    // Get received payments
+    // Get received payments with network information
     const { data: receivedPayments, error: receivedError } = await supabase
       .from('payments')
-      .select('*')
+      .select('*, network')
       .eq('recipient_username', username)
       .order('created_at', { ascending: false });
 
@@ -201,24 +202,30 @@ export async function getUserPayments(username) {
     // We need to get the user's wallet address first
     const { data: user } = await supabase
       .from('users')
-      .select('wallet_address')
+      .select('wallet_address, qie_address')
       .eq('username', username)
       .single();
 
     let sentPayments = [];
     if (user) {
-      const { data: sent, error: sentError } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('sender_address', user.wallet_address)
-        .order('created_at', { ascending: false });
+      // Check for sent payments from both Aptos and QIE addresses
+      const senderAddresses = [user.wallet_address, user.qie_address].filter(Boolean);
+      
+      for (const address of senderAddresses) {
+        const { data: sent, error: sentError } = await supabase
+          .from('payments')
+          .select('*, network')
+          .eq('sender_address', address)
+          .order('created_at', { ascending: false });
 
-      if (!sentError && sent) {
-        // Mark sent payments with a flag
-        sentPayments = sent.map(payment => ({
-          ...payment,
-          is_sent: true
-        }));
+        if (!sentError && sent) {
+          // Mark sent payments with a flag and preserve network info
+          const markedSent = sent.map(payment => ({
+            ...payment,
+            is_sent: true
+          }));
+          sentPayments = [...sentPayments, ...markedSent];
+        }
       }
     }
 
@@ -226,7 +233,10 @@ export async function getUserPayments(username) {
     const allPayments = [...(receivedPayments || []), ...sentPayments]
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    return allPayments;
+    // Mark legacy transactions with proper network identification
+    const markedPayments = markLegacyTransactions(allPayments);
+
+    return markedPayments;
   } catch (error) {
     console.error('Error getting payments:', error);
     return [];

@@ -1,10 +1,10 @@
 # PrivatePay 🐙
 
-> **The first on-chain untraceable, unidentifiable private payments on Aptos**
+> **The first on-chain untraceable, unidentifiable private payments on QIE**
 
-[![Aptos](https://img.shields.io/badge/Aptos-Blockchain-blue)](https://aptoslabs.com/)
+[![QIE](https://img.shields.io/badge/QIE-Blockchain-blue)](https://qie.digital/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Move](https://img.shields.io/badge/Move-Smart%20Contracts-red)](https://move-language.github.io/)
+[![Solidity](https://img.shields.io/badge/Solidity-Smart%20Contracts-red)](https://soliditylang.org/)
 
 **Simply means:** Stealth Crypto Payments using multilayer forks
 
@@ -81,7 +81,7 @@ Powered by ECDH + secp256k1 + BIP 0352/EIP 5564 + ROFL DarkPool Mixer
 
 #### 2. Receive Payment 💸
 - Payer accesses link → generates unique stealth address
-- Payment sent to stealth address on Aptos
+- Payment sent to stealth address on QIE
 - Transaction is unlinkable to recipient's identity
 
 #### 3. Manage Funds 💰
@@ -124,12 +124,12 @@ Powered by ECDH + secp256k1 + BIP 0352/EIP 5564 + ROFL DarkPool Mixer
 
 ### Built With
 
-- **Blockchain**: Aptos (Move smart contracts)
+- **Blockchain**: QIE (Solidity smart contracts)
 - **Frontend**: React + TypeScript + Vite
 - **Backend**: Node.js + Express
 - **Database**: Supabase (PostgreSQL)
 - **Cryptography**: @noble/secp256k1, @noble/hashes
-- **Wallet**: Petra (Aptos wallet)
+- **Wallet**: MetaMask (QIE wallet)
 - **Rewards**: Photon SDK integration
 
 ---
@@ -168,7 +168,7 @@ Powered by ECDH + secp256k1 + BIP 0352/EIP 5564 + ROFL DarkPool Mixer
 - ✅ Stealth address generation
 - ✅ Payment link system
 - ✅ Dashboard and monitoring
-- ✅ Aptos wallet integration
+- ✅ QIE wallet integration
 
 ### Phase 2: Enhanced Privacy 🚧
 - 🚧 Zero-knowledge proofs (Plonky2)
@@ -202,7 +202,7 @@ Powered by ECDH + secp256k1 + BIP 0352/EIP 5564 + ROFL DarkPool Mixer
 ```
 ┌─────────────────┐
 │   User Wallet   │
-│  (Petra/Aptos)  │
+│ (MetaMask/QIE)  │
 └────────┬────────┘
          │
          ▼
@@ -219,10 +219,10 @@ Powered by ECDH + secp256k1 + BIP 0352/EIP 5564 + ROFL DarkPool Mixer
          │
          ▼
 ┌─────────────────────────────────┐
-│      Aptos Blockchain           │
+│      QIE Blockchain             │
 │  ┌──────────────────────────┐   │
-│  │   Move Smart Contracts   │   │
-│  │  - StealthSigner         │   │
+│  │  Solidity Smart Contracts│   │
+│  │  - StealthAddressRegistry│   │
 │  │  - Payment Manager       │   │
 │  │  - Event System          │   │
 │  └──────────────────────────┘   │
@@ -242,7 +242,7 @@ Powered by ECDH + secp256k1 + BIP 0352/EIP 5564 + ROFL DarkPool Mixer
    ├─ Compute shared secret: ECDH(ephemeralPriv, viewingPub)
    ├─ Compute tweak: SHA256(sharedSecret || k)
    ├─ Derive stealth public key: stealthPub = spendPub + (tweak * G)
-   └─ Derive Aptos address: SHA3_256(stealthPub)[0:16]
+   └─ Derive QIE address: keccak256(stealthPub)[12:32]
 
 3. Payment Detection
    ├─ Recipient computes: ECDH(viewingPriv, ephemeralPub)
@@ -277,8 +277,8 @@ graph TB
     end
     
     subgraph "Blockchain Layer"
-        Aptos[Aptos Blockchain]
-        Move[Move Contracts]
+        QIE[QIE Blockchain]
+        Solidity[Solidity Contracts]
         Events[Event System]
     end
     
@@ -289,15 +289,15 @@ graph TB
     end
     
     UI --> API
-    Wallet --> Aptos
+    Wallet --> QIE
     Dashboard --> API
     API --> DB
     API --> Stealth
-    Workers --> Aptos
+    Workers --> QIE
     Workers --> Events
     Stealth --> ECDH
     ECDH --> Crypto
-    Move --> Aptos
+    Solidity --> QIE
     Events --> Workers
 ```
 
@@ -309,12 +309,12 @@ sequenceDiagram
     participant Frontend
     participant Backend
     participant Crypto as Cryptographic Engine
-    participant Aptos as Aptos Blockchain
+    participant QIE as QIE Blockchain
     
     Payer->>Frontend: Access Payment Link
     Frontend->>Backend: Request Meta Address
-    Backend->>Aptos: Fetch Meta Address
-    Aptos-->>Backend: Return Meta Address
+    Backend->>QIE: Fetch Meta Address
+    QIE-->>Backend: Return Meta Address
     Backend-->>Frontend: Meta Address (spendPub + viewingPub)
     
     Frontend->>Crypto: Generate Ephemeral Key Pair
@@ -332,12 +332,12 @@ sequenceDiagram
     Note over Crypto: stealthPub = spendPub + (tweak * G)
     Crypto-->>Frontend: stealthPub
     
-    Frontend->>Crypto: Derive Aptos Address
-    Note over Crypto: address = SHA3_256(stealthPub)[0:16]
+    Frontend->>Crypto: Derive QIE Address
+    Note over Crypto: address = keccak256(stealthPub)[12:32]
     Crypto-->>Frontend: stealthAddress
     
     Frontend-->>Payer: Display Stealth Address
-    Payer->>Aptos: Send Payment to stealthAddress
+    Payer->>QIE: Send Payment to stealthAddress
 ```
 
 ### 3. Payment Flow - Complete Process
@@ -349,16 +349,16 @@ sequenceDiagram
     participant Frontend
     participant Backend
     participant Workers as Monitoring Workers
-    participant Aptos as Aptos Blockchain
-    participant Move as Move Contracts
+    participant QIE as QIE Blockchain
+    participant Solidity as Solidity Contracts
     
     Note over Recipient: Setup Phase
     Recipient->>Frontend: Create Payment Link
     Frontend->>Backend: Register Meta Address
-    Backend->>Move: register(spendPub, viewingPub)
-    Move->>Aptos: Store Meta Address
-    Aptos-->>Move: Confirmed
-    Move-->>Backend: Meta Address ID
+    Backend->>Solidity: register(spendPub, viewingPub)
+    Solidity->>QIE: Store Meta Address
+    QIE-->>Solidity: Confirmed
+    Solidity-->>Backend: Meta Address ID
     Backend-->>Frontend: Payment Link Created
     
     Note over Payer: Payment Phase
@@ -367,28 +367,28 @@ sequenceDiagram
     Backend-->>Frontend: Meta Address
     Frontend->>Frontend: Generate Stealth Address
     Frontend-->>Payer: Display Stealth Address
-    Payer->>Aptos: Send APT to stealthAddress
+    Payer->>QIE: Send QIE to stealthAddress
     
     Note over Workers: Monitoring Phase
-    Workers->>Aptos: Scan for Transactions
-    Aptos-->>Workers: Transaction Detected
-    Workers->>Move: emit Announcement Event
-    Note over Move: Store: ephemeralPub + viewHint
-    Move->>Aptos: Event Emitted
+    Workers->>QIE: Scan for Transactions
+    QIE-->>Workers: Transaction Detected
+    Workers->>Solidity: emit Announcement Event
+    Note over Solidity: Store: ephemeralPub + viewHint
+    Solidity->>QIE: Event Emitted
     
     Note over Recipient: Withdrawal Phase
     Recipient->>Frontend: Check for Payments
     Frontend->>Backend: Fetch Announcements
-    Backend->>Aptos: Query Events
-    Aptos-->>Backend: Announcement Events
+    Backend->>QIE: Query Events
+    QIE-->>Backend: Announcement Events
     Backend->>Backend: Compute Stealth Addresses
     Backend->>Backend: Match with Transactions
     Backend-->>Frontend: Payment Detected
     Recipient->>Frontend: Withdraw Funds
-    Frontend->>Move: createTransaction(ephemeralPub)
-    Move->>Move: Compute stealthPrivateKey
-    Move->>Aptos: Sign & Execute Transfer
-    Aptos-->>Recipient: Funds Received
+    Frontend->>Solidity: createTransaction(ephemeralPub)
+    Solidity->>Solidity: Compute stealthPrivateKey
+    Solidity->>QIE: Sign & Execute Transfer
+    QIE-->>Recipient: Funds Received
 ```
 
 ### 4. Privacy Infrastructure Stack
@@ -436,7 +436,7 @@ graph TD
 sequenceDiagram
     participant Workers as Monitoring Workers
     participant Backend as Backend API
-    participant Aptos as Aptos Blockchain
+    participant QIE as QIE Blockchain
     participant Events as Event System
     participant DB as Database
     
@@ -448,20 +448,20 @@ sequenceDiagram
         
         loop For Each Stealth Address
             alt isTransacted == true
-                Workers->>Aptos: Check Transaction Status
-                Aptos-->>Workers: Transaction Confirmed
+                Workers->>QIE: Check Transaction Status
+                QIE-->>Workers: Transaction Confirmed
                 Workers->>Events: emit Announcement Event
                 Note over Events: Store: ephemeralPub + viewHint<br/>NO stealthAddress<br/>NO metaAddress
-                Events->>Aptos: Event Logged
+                Events->>QIE: Event Logged
             else isTransacted == false
-                Workers->>Aptos: Continue Monitoring
+                Workers->>QIE: Continue Monitoring
             end
         end
     end
     
     Note over Backend,DB: Recovery Scenario
-    Backend->>Aptos: Fetch All Announcement Events
-    Aptos-->>Backend: All Events
+    Backend->>QIE: Fetch All Announcement Events
+    QIE-->>Backend: All Events
     Backend->>Backend: Rebuild Database from Events
     Backend->>DB: Restore Stealth Address Data
 ```
@@ -474,8 +474,8 @@ sequenceDiagram
     participant Frontend
     participant Backend
     participant Crypto as Crypto Engine
-    participant Move as Move Contract
-    participant Aptos as Aptos Blockchain
+    participant Solidity as Solidity Contract
+    participant QIE as QIE Blockchain
     
     User->>Frontend: Sign In with Wallet
     Frontend->>Crypto: Generate Key Pairs
@@ -484,10 +484,10 @@ sequenceDiagram
     Crypto-->>Frontend: Key Pairs
     
     Frontend->>Backend: Register Meta Address
-    Backend->>Move: register(spendPub, viewingPub)
-    Move->>Aptos: Store Meta Address
-    Aptos-->>Move: Transaction Confirmed
-    Move-->>Backend: Meta Address ID
+    Backend->>Solidity: register(spendPub, viewingPub)
+    Solidity->>QIE: Store Meta Address
+    QIE-->>Solidity: Transaction Confirmed
+    Solidity-->>Backend: Meta Address ID
     
     Backend->>Backend: Create Payment Link
     Backend->>Backend: Store in Database
@@ -561,8 +561,8 @@ graph TB
 ### Prerequisites
 
 - Node.js 18+
-- Aptos CLI
-- Petra Wallet
+- QIE CLI (if available)
+- MetaMask Wallet
 - Supabase account
 
 ### Installation
@@ -623,7 +623,7 @@ npm run dev
 ## 📚 Documentation
 
 - [Troubleshooting Guide](./TROUBLESHOOTING_GUIDE.md) - Common issues and solutions
-- [Aptos Rate Limit Fix](./APTOS_RATE_LIMIT_FIX.md) - Auto-retry for API rate limits
+- [QIE Rate Limit Fix](./QIE_RATE_LIMIT_FIX.md) - Auto-retry for API rate limits
 - [Withdraw Fix Details](./WITHDRAW_JSON_ERROR_FIX.md) - Supabase error handling
 - [Project Status](./PROJECT_RUNNING_STATUS.md) - Current running status
 - [Environment Variables](./ENV_CHECK_REPORT.md) - Configuration guide
@@ -633,7 +633,7 @@ npm run dev
 
 ### Technology
 
-- **Aptos Foundation** - For the amazing blockchain platform
+- **QIE Foundation** - For the amazing blockchain platform
 - **Oasis Protocol** - Inspiration from ROFL and Sapphire
 - **BIP 0352 / EIP 5564** - Stealth address standards
 - **@noble** libraries - Cryptographic primitives
