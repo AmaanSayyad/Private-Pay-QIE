@@ -5,14 +5,14 @@
 
 export const QIE_TESTNET_CONFIG = {
   // Network Information
-  chainId: 35441, // QIE testnet chain ID
+  chainId: 1983, // QIE testnet actual chain ID
   chainName: 'QIE Testnet',
   nativeCurrency: {
     name: 'QIE',
     symbol: 'QIE',
     decimals: 18
   },
-  rpcUrls: ['https://rpc1testnet.qie.digital/'],
+  rpcUrls: ['https://rpc1testnet.qie.digital/'], // Using working RPC
   blockExplorerUrls: ['https://testnet.qie.digital'],
   
   // Contract Addresses (updated after deployment)

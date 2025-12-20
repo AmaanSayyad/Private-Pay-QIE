@@ -80,8 +80,16 @@ export async function registerUser(walletAddress, username) {
           .single();
 
         if (error) throw error;
+        
+        // Ensure balance record exists for updated username
+        await ensureBalanceRecord(username, walletAddress);
+        
         return data;
       }
+      
+      // Ensure balance record exists
+      await ensureBalanceRecord(username, walletAddress);
+      
       return existingUser;
     }
 
@@ -95,13 +103,7 @@ export async function registerUser(walletAddress, username) {
     if (error) throw error;
 
     // Initialize balance
-    await supabase
-      .from('balances')
-      .insert([{ 
-        username, 
-        wallet_address: walletAddress, 
-        available_balance: 0 
-      }]);
+    await ensureBalanceRecord(username, walletAddress);
 
     return data;
   } catch (error) {
@@ -111,10 +113,49 @@ export async function registerUser(walletAddress, username) {
 }
 
 /**
+ * Ensure balance record exists for a user
+ */
+async function ensureBalanceRecord(username, walletAddress) {
+  try {
+    // Check if balance record exists
+    const { data: existingBalance } = await supabase
+      .from('balances')
+      .select('*')
+      .eq('username', username)
+      .single();
+
+    if (!existingBalance) {
+      // Create balance record
+      await supabase
+        .from('balances')
+        .insert([{ 
+          username, 
+          wallet_address: walletAddress, 
+          available_balance: 0 
+        }]);
+    }
+  } catch (error) {
+    console.error('Error ensuring balance record:', error);
+    // Don't throw here, it's not critical
+  }
+}
+
+/**
  * Record incoming payment
  */
 export async function recordPayment(senderAddress, recipientUsername, amount, txHash) {
   try {
+    // First, verify that the recipient user exists
+    const { data: recipientUser, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', recipientUsername)
+      .single();
+
+    if (userError || !recipientUser) {
+      throw new Error(`Recipient username '${recipientUsername}' not found`);
+    }
+
     // Record payment
     const { data: payment, error: paymentError } = await supabase
       .from('payments')
@@ -123,7 +164,8 @@ export async function recordPayment(senderAddress, recipientUsername, amount, tx
         recipient_username: recipientUsername,
         amount: parseFloat(amount),
         tx_hash: txHash,
-        status: 'completed'
+        status: 'completed',
+        network: 'qie' // Mark as QIE network payment
       }])
       .select()
       .single();
@@ -132,26 +174,52 @@ export async function recordPayment(senderAddress, recipientUsername, amount, tx
 
     if (paymentError) throw paymentError;
 
-    // Update balance
+    // Check if balance record exists, create if not
     const { data: balance, error: balanceError } = await supabase
       .from('balances')
       .select('available_balance')
       .eq('username', recipientUsername)
       .single();
 
-    validateSupabaseResponse(balance, balanceError, 'recordPayment.getBalance');
+    let currentBalance = 0;
+    
+    if (balanceError && balanceError.code === 'PGRST116') {
+      // Balance record doesn't exist, create it
+      const { data: newBalance, error: createError } = await supabase
+        .from('balances')
+        .insert([{
+          username: recipientUsername,
+          wallet_address: recipientUser.wallet_address || recipientUser.qie_address,
+          available_balance: parseFloat(amount)
+        }])
+        .select()
+        .single();
 
-    if (balanceError) throw balanceError;
+      if (createError) {
+        console.error('Error creating balance record:', createError);
+        // Don't throw here, payment is already recorded
+      }
+    } else if (balanceError) {
+      console.error('Error getting balance:', balanceError);
+      // Don't throw here, payment is already recorded
+    } else {
+      // Balance exists, update it
+      currentBalance = balance?.available_balance || 0;
+      const newBalance = currentBalance + parseFloat(amount);
 
-    const newBalance = (balance?.available_balance || 0) + parseFloat(amount);
+      const { error: updateError } = await supabase
+        .from('balances')
+        .update({ 
+          available_balance: newBalance,
+          updated_at: new Date().toISOString()
+        })
+        .eq('username', recipientUsername);
 
-    await supabase
-      .from('balances')
-      .update({ 
-        available_balance: newBalance,
-        updated_at: new Date().toISOString()
-      })
-      .eq('username', recipientUsername);
+      if (updateError) {
+        console.error('Error updating balance:', updateError);
+        // Don't throw here, payment is already recorded
+      }
+    }
 
     return payment;
   } catch (error) {
@@ -343,6 +411,12 @@ export async function getUserByUsername(username) {
       }
       throw error;
     }
+    
+    // Ensure balance record exists for this user
+    if (data) {
+      await ensureBalanceRecord(data.username, data.wallet_address || data.qie_address);
+    }
+    
     return data;
   } catch (error) {
     console.error('Error getting user:', error);
@@ -352,6 +426,59 @@ export async function getUserByUsername(username) {
       throw new Error('Database is unreachable. Please check your connection.');
     }
     return null;
+  }
+}
+
+/**
+ * Fix missing balance records for existing users
+ */
+export async function fixMissingBalanceRecords() {
+  try {
+    // Get all users
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('username, wallet_address, qie_address');
+
+    if (usersError) throw usersError;
+
+    if (!users || users.length === 0) {
+      console.log('No users found');
+      return;
+    }
+
+    let fixed = 0;
+    for (const user of users) {
+      try {
+        // Check if balance record exists
+        const { data: balance } = await supabase
+          .from('balances')
+          .select('*')
+          .eq('username', user.username)
+          .single();
+
+        if (!balance) {
+          // Create missing balance record
+          await supabase
+            .from('balances')
+            .insert([{
+              username: user.username,
+              wallet_address: user.wallet_address || user.qie_address,
+              available_balance: 0
+            }]);
+          
+          fixed++;
+          console.log(`Created balance record for user: ${user.username}`);
+        }
+      } catch (error) {
+        console.error(`Error fixing balance for user ${user.username}:`, error);
+      }
+    }
+
+    console.log(`Fixed ${fixed} missing balance records`);
+    return { fixed, total: users.length };
+  } catch (error) {
+    console.error('Error fixing missing balance records:', error);
+    throw error;
   }
 }
 

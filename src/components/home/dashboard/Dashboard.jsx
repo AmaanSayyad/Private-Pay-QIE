@@ -95,14 +95,27 @@ function ReceiveCard({ setOpenQr, user, isLoading }) {
     }
   }, [account]);
 
-  const handleSaveUsername = () => {
+  const handleSaveUsername = async () => {
     if (username && account) {
-      localStorage.setItem(`qie_username_${account}`, username);
-      setIsEditingUsername(false);
-      toast.success("Username saved!", {
-        duration: 1000,
-        position: "bottom-center",
-      });
+      try {
+        // Save to localStorage
+        localStorage.setItem(`qie_username_${account}`, username);
+        
+        // Update in Supabase
+        await registerUser(account, username);
+        
+        setIsEditingUsername(false);
+        toast.success("Username updated successfully!", {
+          duration: 2000,
+          position: "bottom-center",
+        });
+      } catch (error) {
+        console.error('Error updating username:', error);
+        toast.error("Failed to update username", {
+          duration: 2000,
+          position: "bottom-center",
+        });
+      }
     }
   };
 

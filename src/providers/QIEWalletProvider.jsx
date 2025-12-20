@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { QIE_CONFIG, addQIENetworkToMetaMask, switchToQIENetwork } from '../config/qie-config.js';
+import { qieBlockchainService } from '../lib/qie/qieBlockchainService.js';
 import toast from 'react-hot-toast';
 
 /**
@@ -74,6 +75,15 @@ export default function QIEWalletProvider({ children }) {
         const signer = await ethProvider.getSigner();
         setSigner(signer);
 
+        // Set signer in QIE blockchain service
+        try {
+          await qieBlockchainService.initialize();
+          qieBlockchainService.signer = signer;
+          console.log('QIE blockchain service signer initialized');
+        } catch (error) {
+          console.error('Failed to initialize QIE blockchain service signer:', error);
+        }
+
         // Get current network
         const network = await ethProvider.getNetwork();
         setChainId(Number(network.chainId));
@@ -112,6 +122,15 @@ export default function QIEWalletProvider({ children }) {
 
       const signer = await ethProvider.getSigner();
       setSigner(signer);
+
+      // Set signer in QIE blockchain service
+      try {
+        await qieBlockchainService.initialize();
+        qieBlockchainService.signer = signer;
+        console.log('QIE blockchain service signer set successfully');
+      } catch (error) {
+        console.error('Failed to set QIE blockchain service signer:', error);
+      }
 
       // Get current network
       const network = await ethProvider.getNetwork();

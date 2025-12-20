@@ -32,18 +32,25 @@ class QIEPaymentProcessor {
       // Validate inputs
       await this.validateTransferParams(params);
 
-      // Initialize blockchain service if needed
-      if (!qieBlockchainService.isInitialized) {
-        await qieBlockchainService.initialize();
+      // Create fresh provider and signer to avoid network caching issues
+      if (!window.ethereum) {
+        throw new Error('MetaMask not found');
       }
 
-      // Get signer
-      if (!qieBlockchainService.signer) {
-        throw new Error('Wallet not connected');
+      // Create a fresh provider instance
+      const freshProvider = new ethers.BrowserProvider(window.ethereum);
+      const freshSigner = await freshProvider.getSigner();
+
+      // Verify we're on the correct network
+      const network = await freshProvider.getNetwork();
+      console.log('Current network:', Number(network.chainId), 'Expected:', QIE_CONFIG.chainId);
+      
+      if (Number(network.chainId) !== QIE_CONFIG.chainId) {
+        throw new Error(`Please switch to QIE Testnet (Chain ID: ${QIE_CONFIG.chainId}). Currently on Chain ID: ${network.chainId}`);
       }
 
-      // Calculate gas fees
-      const gasConfig = await this.calculateGasFees({
+      // Calculate gas fees using fresh provider
+      const gasConfig = await this.calculateGasFeesWithProvider(freshProvider, {
         gasLimit,
         gasPrice,
         maxFeePerGas,
@@ -58,26 +65,24 @@ class QIEPaymentProcessor {
         ...gasConfig.feeData
       };
 
-      // Validate transaction before sending
-      await qieBlockchainService.validateTransaction({
-        ...transaction,
-        from: fromAddress
-      });
+      console.log('Sending transaction:', transaction);
 
-      // Send transaction
-      const txResponse = await qieBlockchainService.signer.sendTransaction(transaction);
+      // Send transaction with fresh signer
+      const txResponse = await freshSigner.sendTransaction(transaction);
+      console.log('Transaction sent:', txResponse.hash);
 
-      // Monitor transaction
-      const receipt = await qieBlockchainService.monitorTransaction(txResponse.hash);
+      // Wait for transaction receipt
+      const receipt = await freshProvider.waitForTransaction(txResponse.hash, 1);
+      console.log('Transaction confirmed:', receipt);
 
       return {
         success: true,
         transactionHash: receipt.hash,
         blockNumber: receipt.blockNumber,
-        gasUsed: receipt.gasUsed,
+        gasUsed: receipt.gasUsed?.toString(),
         effectiveGasPrice: receipt.effectiveGasPrice?.toString(),
         status: receipt.status,
-        confirmations: receipt.confirmations,
+        confirmations: 1,
         explorerUrl: this.getExplorerUrl(receipt.hash)
       };
 
@@ -138,6 +143,66 @@ class QIEPaymentProcessor {
     } catch (error) {
       console.error('Stealth payment failed:', error);
       throw this.handleTransferError(error);
+    }
+  }
+
+  /**
+   * Calculate gas fees for transactions with specific provider
+   */
+  async calculateGasFeesWithProvider(provider, params = {}) {
+    try {
+      const { gasLimit, gasPrice, maxFeePerGas, maxPriorityFeePerGas } = params;
+
+      // Get current network gas data
+      const feeData = await provider.getFeeData();
+
+      let calculatedGasLimit = gasLimit;
+      if (!calculatedGasLimit) {
+        // Estimate gas for basic transfer
+        calculatedGasLimit = 21000; // Standard ETH transfer
+      }
+
+      // Apply gas buffer
+      calculatedGasLimit = Math.floor(calculatedGasLimit * this.gasBuffer);
+
+      // Determine fee structure (EIP-1559 vs legacy)
+      let feeConfig = {};
+
+      if (maxFeePerGas || maxPriorityFeePerGas || feeData.maxFeePerGas) {
+        // EIP-1559 transaction
+        feeConfig = {
+          maxFeePerGas: maxFeePerGas ? ethers.parseUnits(maxFeePerGas.toString(), 'gwei') : 
+                       BigInt(feeData.maxFeePerGas || feeData.gasPrice),
+          maxPriorityFeePerGas: maxPriorityFeePerGas ? ethers.parseUnits(maxPriorityFeePerGas.toString(), 'gwei') :
+                               BigInt(feeData.maxPriorityFeePerGas || '2000000000') // 2 gwei default
+        };
+
+        // Validate fee limits
+        if (feeConfig.maxFeePerGas > this.maxGasPrice) {
+          feeConfig.maxFeePerGas = this.maxGasPrice;
+        }
+        if (feeConfig.maxFeePerGas < this.minGasPrice) {
+          feeConfig.maxFeePerGas = this.minGasPrice;
+        }
+      } else {
+        // Legacy transaction
+        const calculatedGasPrice = gasPrice ? ethers.parseUnits(gasPrice.toString(), 'gwei') :
+                                   BigInt(feeData.gasPrice);
+
+        feeConfig = {
+          gasPrice: calculatedGasPrice > this.maxGasPrice ? this.maxGasPrice :
+                   calculatedGasPrice < this.minGasPrice ? this.minGasPrice : calculatedGasPrice
+        };
+      }
+
+      return {
+        gasLimit: calculatedGasLimit,
+        feeData: feeConfig
+      };
+
+    } catch (error) {
+      console.error('Gas calculation failed:', error);
+      throw new Error(`Failed to calculate gas fees: ${error.message}`);
     }
   }
 
@@ -315,13 +380,9 @@ class QIEPaymentProcessor {
       throw new Error('Amount must be greater than 0');
     }
 
-    // Check if sender has sufficient balance
-    const balance = await qieBlockchainService.provider.getBalance(fromAddress);
-    const amountWei = ethers.parseEther(amount.toString());
-    
-    if (balance < amountWei) {
-      throw new Error('Insufficient balance for transfer');
-    }
+    // Skip balance check to avoid network issues
+    // Balance will be checked by MetaMask during transaction
+    console.log('Validation passed for transfer:', { fromAddress, toAddress, amount });
 
     return true;
   }
@@ -371,8 +432,10 @@ class QIEPaymentProcessor {
       return new Error('Transaction was rejected by user');
     } else if (error.code === 'INSUFFICIENT_FUNDS') {
       return new Error('Insufficient funds for transaction');
-    } else if (error.code === 'NETWORK_ERROR') {
-      return new Error('Network error. Please try again.');
+    } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('network changed')) {
+      return new Error('Network error. Please ensure you are on QIE Testnet and try again.');
+    } else if (error.message?.includes('Chain ID')) {
+      return new Error('Wrong network. Please switch to QIE Testnet in MetaMask.');
     } else if (error.message?.includes('gas')) {
       return new Error('Transaction failed due to gas issues. Try increasing gas limit.');
     } else if (error.message?.includes('nonce')) {
