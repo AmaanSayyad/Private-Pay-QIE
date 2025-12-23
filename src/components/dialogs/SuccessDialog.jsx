@@ -109,15 +109,10 @@ export default function SuccessDialog({
                     {successData.amount}
                   </div>
 
-                  <div className="flex flex-row items-center gap-1">
-                    <img
-                      src={successData.token?.nativeToken ? successData.token.nativeToken.logo : successData.token.token.logo}
-                      alt=""
-                      className="w-6 h-6 -mt-1 rounded-full"
-                    />
-                    <div className="font-medium text-xl">
-                      {successData.token?.nativeToken ? successData.token.nativeToken.symbol : successData.token.token.symbol}
-                    </div>
+                  <div className="font-medium text-xl">
+                    {successData.token?.nativeToken
+                      ? successData.token.nativeToken.symbol
+                      : successData.token.token.symbol}
                   </div>
 
                 </div>
