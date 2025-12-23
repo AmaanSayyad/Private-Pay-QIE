@@ -10,7 +10,6 @@ import toast from "react-hot-toast";
 import { Icons } from "../../shared/Icons.jsx";
 import { useNavigate } from "react-router-dom";
 import { getUserBalance, registerUser } from "../../../lib/supabase.js";
-import PhotonWalletDisplay from "../../shared/PhotonWalletDisplay.jsx";
 import BalanceChart from "./BalanceChart.jsx";
 import { useAptos } from "../../../providers/QIEWalletProvider.jsx";
 import { formatQIEAmount } from "../../../utils/qie-utils.js";
@@ -67,7 +66,6 @@ export default function Dashboard() {
             <ReceiveCard setOpenQr={setOpenQr} />
             <MergedBalanceCard balance={balance} isLoading={isLoadingBalance} />
             <PaymentLinksDashboard />
-            <PhotonWalletDisplay />
           </div>
         </div>
       </motion.div>

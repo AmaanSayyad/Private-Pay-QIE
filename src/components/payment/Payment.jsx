@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { useLoaderData, useParams } from "react-router-dom";
 import { getPaymentLinkByAlias, getUserByUsername, recordPayment } from "../../lib/supabase.js";
-import { usePhoton } from "../../providers/PhotonProvider.jsx";
 import { useAptos } from "../../providers/QIEWalletProvider.jsx";
 import { sendQIETransfer } from "../../lib/qie/qieTransactionService.js";
 import SuccessDialog from "../dialogs/SuccessDialog.jsx";
@@ -15,7 +14,6 @@ const TREASURY_WALLET = import.meta.env.VITE_TREASURY_WALLET_ADDRESS;
 export default function Payment() {
   const loaderData = useLoaderData();
   const { alias_url } = useParams();
-  const { trackRewardedEvent, trackUnrewardedEvent } = usePhoton();
 
   const alias = loaderData ? loaderData.subdomain : alias_url;
 
@@ -53,21 +51,11 @@ export default function Payment() {
           // Get recipient user data
           const recipient = await getUserByUsername(paymentLink.username);
           setRecipientData(recipient);
-          
-          // Track unrewarded event for payment page view
-          trackUnrewardedEvent("payment_page_viewed", {
-            alias: alias,
-            recipientUsername: paymentLink.username,
-          });
         } else {
           // If not found as payment link, try as username
           const recipient = await getUserByUsername(alias);
           if (recipient) {
             setRecipientData(recipient);
-            trackUnrewardedEvent("payment_page_viewed", {
-              alias: alias,
-              recipientUsername: alias,
-            });
           } else {
             setError("Payment link not found. Please check the URL and try again.");
           }
@@ -81,7 +69,7 @@ export default function Payment() {
     }
 
     fetchPaymentLink();
-  }, [alias, trackUnrewardedEvent]);
+  }, [alias]);
 
   const handleConnectWallet = async () => {
     try {
@@ -157,15 +145,6 @@ export default function Payment() {
         ),
         { duration: 8000 }
       );
-
-      // Track rewarded event for successful payment
-      trackRewardedEvent("qie_payment_link_payment_sent", {
-        amount: parseFloat(amount),
-        tokenSymbol: "QIE",
-        recipientUsername: recipientUsername,
-        alias: alias,
-        txHash: result.hash.slice(0, 10),
-      }, account);
 
       // Show success dialog
       const successDataObj = {

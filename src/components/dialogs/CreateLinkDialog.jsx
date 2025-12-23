@@ -17,7 +17,6 @@ import { CARDS_SCHEME } from "../home/dashboard/PaymentLinksDashboard.jsx";
 import SquidLogo from "../../assets/squidl-logo.svg?react";
 import { cnm } from "../../utils/style.js";
 import { createPaymentLink, getPaymentLinks } from "../../lib/supabase.js";
-import { usePhoton } from "../../providers/PhotonProvider.jsx";
 import { useAptos } from "../../providers/QIEWalletProvider.jsx";
 import { generateQIEPaymentLink, validateQIEPaymentLink } from "../../utils/qie-payment-links.js";
 import { generateMetaAddress } from "../../utils/stealth-crypto.js";
@@ -114,7 +113,6 @@ function StepOne({
   setInitialAliasCount,
 }) {
   const { account } = useAptos();
-  const { trackUnrewardedEvent } = usePhoton();
 
   async function handleUpdate() {
     if (!alias) {
@@ -159,15 +157,6 @@ function StepOne({
       setInitialAliasCount(paymentLinks.length);
 
       toast.success("Your QIE payment link has been created!");
-      
-      // Track unrewarded event for attribution
-      trackUnrewardedEvent("qie_payment_link_created", {
-        alias: alias,
-        username: currentUsername,
-        totalLinks: paymentLinks.length,
-        hasStealthAddress: true,
-        chainId: qiePaymentLink.chainId
-      });
       
       // Trigger a custom event to refresh the dashboard
       window.dispatchEvent(new Event('payment-links-updated'));
