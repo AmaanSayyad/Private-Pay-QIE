@@ -142,8 +142,10 @@ async function ensureBalanceRecord(username, walletAddress) {
 
 /**
  * Record incoming payment
+ * Optionally attach the payment_alias (the payment link alias that was used)
+ * so we can compute per-link totals on the dashboard.
  */
-export async function recordPayment(senderAddress, recipientUsername, amount, txHash) {
+export async function recordPayment(senderAddress, recipientUsername, amount, txHash, paymentAlias = null) {
   try {
     // First, verify that the recipient user exists
     const { data: recipientUser, error: userError } = await supabase
@@ -156,19 +158,61 @@ export async function recordPayment(senderAddress, recipientUsername, amount, tx
       throw new Error(`Recipient username '${recipientUsername}' not found`);
     }
 
-    // Record payment
-    const { data: payment, error: paymentError } = await supabase
-      .from('payments')
-      .insert([{
-        sender_address: senderAddress,
-        recipient_username: recipientUsername,
-        amount: parseFloat(amount),
-        tx_hash: txHash,
-        status: 'completed',
-        network: 'qie' // Mark as QIE network payment
-      }])
-      .select()
-      .single();
+    // Base payload for payments table
+    const basePayload = {
+      sender_address: senderAddress,
+      recipient_username: recipientUsername,
+      amount: parseFloat(amount),
+      tx_hash: txHash,
+      status: 'completed',
+      network: 'qie', // Mark as QIE network payment
+    };
+
+    // Try inserting with payment_alias if provided. If the column doesn't
+    // exist yet on the Supabase instance (migration not applied), gracefully
+    // fall back to inserting without it so payments still work.
+    let payment, paymentError;
+    try {
+      const payloadWithAlias =
+        paymentAlias != null && paymentAlias !== ""
+          ? { ...basePayload, payment_alias: paymentAlias }
+          : basePayload;
+
+      ({ data: payment, error: paymentError } = await supabase
+        .from('payments')
+        .insert([payloadWithAlias])
+        .select()
+        .single());
+
+      // If Supabase returns an undefined-column error referencing payment_alias,
+      // trigger the fallback path below.
+      if (
+        paymentError &&
+        (paymentError.code === '42703' ||
+          (typeof paymentError.message === 'string' &&
+            paymentError.message.includes('payment_alias')))
+      ) {
+        throw paymentError;
+      }
+    } catch (insertError) {
+      const message = insertError?.message || insertError?.toString() || '';
+      const code = insertError?.code;
+
+      if (message.includes('payment_alias') || code === '42703') {
+        console.warn(
+          "payments.payment_alias column missing; inserting payment without alias. " +
+            "Run the latest Supabase migration to enable per-link totals."
+        );
+
+        ({ data: payment, error: paymentError } = await supabase
+          .from('payments')
+          .insert([basePayload])
+          .select()
+          .single());
+      } else {
+        throw insertError;
+      }
+    }
 
     validateSupabaseResponse(payment, paymentError, 'recordPayment');
 
@@ -230,6 +274,49 @@ export async function recordPayment(senderAddress, recipientUsername, amount, tx
       throw new Error('Database is unreachable. Payment may not have been recorded.');
     }
     throw error;
+  }
+}
+
+/**
+ * Get per-alias totals for a recipient username.
+ * Returns an array of { payment_alias, total_amount } rows.
+ */
+export async function getPaymentTotalsByAlias(recipientUsername) {
+  try {
+    const { data, error } = await supabase
+      .from('payments')
+      .select('payment_alias, amount, status, network')
+      .eq('recipient_username', recipientUsername);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) return {};
+
+    const totals = {};
+
+    for (const payment of data) {
+      // Only count completed incoming payments that are tied to an alias
+      if (
+        !payment.payment_alias ||
+        payment.status !== 'completed' ||
+        payment.network !== 'qie' ||
+        typeof payment.amount !== 'number' ||
+        payment.amount <= 0
+      ) {
+        continue;
+      }
+
+      const alias = payment.payment_alias;
+      if (!totals[alias]) {
+        totals[alias] = 0;
+      }
+      totals[alias] += payment.amount;
+    }
+
+    return totals;
+  } catch (error) {
+    console.error('Error getting payment totals by alias:', error);
+    return {};
   }
 }
 
@@ -509,7 +596,63 @@ export async function createPaymentLink(walletAddress, username, alias, qieData 
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // Handle duplicate alias by migrating/updating existing record.
+      // This situation commonly happens when an alias was previously created
+      // for the Aptos version and we now want to reuse it for QIE.
+      if (
+        error.code === '23505' || // Postgres unique_violation
+        (typeof error.message === 'string' &&
+          error.message.toLowerCase().includes('duplicate key'))
+      ) {
+        console.warn(
+          'Payment link alias already exists. Updating existing record for QIE instead of failing.',
+          { alias }
+        );
+
+        // Fetch the existing payment link for this alias
+        const { data: existingLink, error: fetchError } = await supabase
+          .from('payment_links')
+          .select('*')
+          .eq('alias', alias)
+          .single();
+
+        if (fetchError || !existingLink) {
+          console.error(
+            'Failed to fetch existing payment link after duplicate error:',
+            fetchError || 'Not found'
+          );
+          throw error;
+        }
+
+        // Merge new data into the existing row, preferring the latest QIE data
+        const mergedData = {
+          ...existingLink,
+          ...linkData,
+        };
+
+        const { data: updatedLink, error: updateError } = await supabase
+          .from('payment_links')
+          .update(mergedData)
+          .eq('id', existingLink.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error(
+            'Failed to update existing payment link after duplicate error:',
+            updateError
+          );
+          throw updateError;
+        }
+
+        return updatedLink;
+      }
+
+      // Non-duplicate errors: bubble up
+      throw error;
+    }
+
     return data;
   } catch (error) {
     console.error('Error creating payment link:', error);

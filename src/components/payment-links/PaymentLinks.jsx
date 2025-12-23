@@ -10,6 +10,7 @@ import { useAtom } from "jotai";
 import SquidLogo from "../../assets/squidl-logo.svg?react";
 import { isCreateLinkDialogAtom } from "../../store/dialog-store.js";
 import { useState, useEffect } from "react";
+import { useAptos } from "../../providers/QIEWalletProvider.jsx";
 import toast from "react-hot-toast";
 import { Icons } from "../shared/Icons.jsx";
 import { getPaymentLinks } from "../../lib/supabase.js";
@@ -17,15 +18,37 @@ import { getPaymentLinks } from "../../lib/supabase.js";
 export default function PaymentLinks() {
   const navigate = useNavigate();
   const [, setOpen] = useAtom(isCreateLinkDialogAtom);
+  const { account, isConnected } = useAptos();
   const [paymentLinks, setPaymentLinks] = useState([]);
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   const loadPaymentLinks = async () => {
-    // TODO: Replace with QIE wallet integration
-    // For now, show empty state
-    setPaymentLinks([]);
-    setIsLoading(false);
+    try {
+      // Require a connected QIE wallet to load links
+      if (!account) {
+        setPaymentLinks([]);
+        setUsername("");
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+
+      // Load username from localStorage (same key used in Dashboard / CreateLinkDialog)
+      const savedUsername =
+        localStorage.getItem(`qie_username_${account}`) || account.slice(2, 8);
+      setUsername(savedUsername);
+
+      const links = await getPaymentLinks(account);
+      setPaymentLinks(links || []);
+    } catch (error) {
+      console.error("Error loading payment links:", error);
+      toast.error("Failed to load payment links");
+      setPaymentLinks([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -40,7 +63,7 @@ export default function PaymentLinks() {
     return () => {
       window.removeEventListener('payment-links-updated', handleUpdate);
     };
-  }, []);
+  }, [account]);
 
   const handleDeleteLink = async (linkId) => {
     try {
@@ -94,10 +117,11 @@ export default function PaymentLinks() {
                 layout
                 transition={{ duration: 0.4 }}
                 className={cnm(
-                  "relative rounded-2xl h-52 md:h-60 w-full overflow-hidden group",
+                  "relative rounded-2xl h-52 md:h-60 w-full overflow-hidden group cursor-pointer",
                   idx > 0 && "-mt-36 md:-mt-44"
                 )}
                 whileHover={{ rotate: -5, y: -20 }}
+                onClick={() => navigate(`/payment/${link.alias}`)}
               >
                 <img
                   src={bgImage}
@@ -114,13 +138,19 @@ export default function PaymentLinks() {
                   <p className="font-medium">{cardName}</p>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleCopyLink(link.alias)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopyLink(link.alias);
+                      }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/20 backdrop-blur-sm rounded-full p-2"
                     >
                       <Icons.copy className="size-4" />
                     </button>
                     <button
-                      onClick={() => handleDeleteLink(link.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteLink(link.id);
+                      }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity bg-red-500/80 backdrop-blur-sm rounded-full p-2"
                     >
                       <Icons.close className="size-4 text-white" />

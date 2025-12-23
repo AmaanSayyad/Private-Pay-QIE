@@ -8,7 +8,7 @@ import { isCreateLinkDialogAtom } from "../../../store/dialog-store.js";
 import SquidLogo from "../../../assets/squidl-logo.svg?react";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { getPaymentLinks } from "../../../lib/supabase.js";
+import { getPaymentLinks, getPaymentTotalsByAlias } from "../../../lib/supabase.js";
 import { useAptos } from "../../../providers/QIEWalletProvider.jsx";
 
 export const AVAILABLE_CARDS_BG = [
@@ -26,6 +26,7 @@ export default function PaymentLinksDashboard({ user }) {
   const navigate = useNavigate();
   const isBackValue = useAtomValue(isBackAtom);
   const [paymentLinks, setPaymentLinks] = useState([]);
+  const [aliasTotals, setAliasTotals] = useState({});
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,6 +39,11 @@ export default function PaymentLinksDashboard({ user }) {
       // Get payment links from Supabase
       const links = await getPaymentLinks(account);
       setPaymentLinks(links);
+
+       // Get per-alias totals for this username
+       const totals = await getPaymentTotalsByAlias(savedUsername || account.slice(2, 8));
+       setAliasTotals(totals || {});
+
       setIsLoading(false);
     }
   };
@@ -110,14 +116,14 @@ export default function PaymentLinksDashboard({ user }) {
                 AVAILABLE_CARDS_BG[idx % AVAILABLE_CARDS_BG.length];
               const colorScheme = CARDS_SCHEME[idx % CARDS_SCHEME.length];
               const cardName = `${link.alias}.privatepay.me`;
+              const totalForAlias = aliasTotals[link.alias] || 0;
 
               return (
                 <motion.button
                   key={idx}
                   onClick={() => {
-                    // Copy link to clipboard
-                    navigator.clipboard.writeText(cardName);
-                    toast.success("Link copied to clipboard!");
+                    // Navigate to payment page for this alias
+                    navigate(`/payment/${link.alias}`);
                   }}
                   layout
                   transition={{ duration: 0.4 }}
@@ -144,7 +150,11 @@ export default function PaymentLinksDashboard({ user }) {
                     )}
                   >
                     <p className="font-medium">{cardName}</p>
-                    <p>$0.00</p>
+                    {totalForAlias > 0 && (
+                      <p className="text-sm font-semibold">
+                        {totalForAlias.toFixed(4)} QIE
+                      </p>
+                    )}
                   </div>
 
                   <div className="absolute left-5 bottom-6 flex items-center justify-between">

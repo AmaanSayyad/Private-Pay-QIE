@@ -164,12 +164,18 @@ export default function SendPage() {
         throw new Error("Transaction failed");
       }
 
-      // Record payment in Supabase with the actual username
+      // Record payment in Supabase with the actual username.
+      // If the recipient was a payment link alias, tag it so we can
+      // show per-link totals on the dashboard.
+      const paymentAlias =
+        (await getPaymentLinkByAlias(recipientUsername.trim()))?.alias || null;
+
       await recordPayment(
         account,
         actualRecipientUsername,
         parseFloat(amount),
-        result.hash
+        result.hash,
+        paymentAlias
       );
 
       // Trigger balance update event

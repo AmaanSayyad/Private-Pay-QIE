@@ -11,11 +11,15 @@ export default function QrDialog({ open, setOpen, qrUrl }) {
   const qrRef = useRef(null);
 
   useEffect(() => {
-    if (account) {
+    // Reload username whenever the connected account changes
+    // or the QR dialog is opened. This ensures we always show
+    // the latest username saved in localStorage (e.g. after the
+    // user updates it on the dashboard).
+    if (account && open) {
       const savedUsername = localStorage.getItem(`qie_username_${account}`);
       setUsername(savedUsername || account.slice(2, 8));
     }
-  }, [account]);
+  }, [account, open]);
 
   const onCopy = (text) => {
     toast.success("Copied to clipboard", {

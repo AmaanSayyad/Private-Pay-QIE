@@ -118,12 +118,14 @@ export default function Payment() {
         throw new Error("Transaction failed");
       }
 
-      // Record payment in Supabase
+      // Record payment in Supabase, tagging the alias used so we can
+      // compute per-link totals on the dashboard.
       await recordPayment(
         account,
         recipientUsername,
         parseFloat(amount),
-        result.hash
+        result.hash,
+        alias
       );
 
       // Trigger balance update event
@@ -154,7 +156,7 @@ export default function Payment() {
         token: { 
           nativeToken: { 
             symbol: "QIE", 
-            logo: "https://qie.digital/favicon.ico" 
+            logo: "/assets/qie logo.webp" 
           } 
         },
         destinationAddress: `${alias}.privatepay.me`,
@@ -227,7 +229,7 @@ export default function Payment() {
               <h1 className="font-medium text-xl mb-2 text-center">
                 Send to{" "}
                 <span className="font-semibold text-primary">
-                  {paymentLinkData?.username || alias}
+                  {paymentLinkData?.alias || alias}
                 </span>
               </h1>
               
