@@ -156,7 +156,7 @@ export default function Payment() {
         token: { 
           nativeToken: { 
             symbol: "QIE", 
-            logo: "/assets/qie logo.webp" 
+            logo: "/assets/qie.png" 
           } 
         },
         destinationAddress: `${alias}.privatepay.me`,

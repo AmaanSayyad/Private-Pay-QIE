@@ -115,7 +115,7 @@ export default function QrDialog({ open, setOpen, qrUrl }) {
         <div className="flex flex-col items-center gap-2 py-2">
           <p className="text-sm text-gray-500">Supported Network</p>
           <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full">
-            <img src="/assets/qie logo.webp" alt="QIE Logo" className="h-5 w-auto object-contain" />
+            <img src="/assets/qie.png" alt="QIE Logo" className="h-5 w-auto object-contain" />
           </div>
         </div>
 
