@@ -1,4 +1,4 @@
-# PrivatePay 🐙
+# Private-Pay 🐙
 
 > **The first on-chain untraceable, unidentifiable private payments on QIE**
 
@@ -50,6 +50,15 @@ Powered by ECDH + secp256k1 + BIP 0352/EIP 5564 + ROFL DarkPool Mixer
 ✨ **Receiver privacy**: Recipients' identities remain hidden
 ✨ **Observer blindness**: Third parties see nothing linkable
 ✨ **Simple UX**: Like Stripe links, but every transaction is a new, invisible wallet
+
+### Comparison with Other Privacy Solutions
+
+| Protocol | Privacy Type | UX | Scalability | Stealth Links |
+|----------|-------------|-----|------------|--------------|
+| **Tornado Cash** | Mixer | Poor | ⚠️ Limited pools | ❌ |
+| **Railgun / ZK Mixers** | ZK Circuits | Heavy friction | ⚠️ High gas costs | ❌ |
+| **Monero / Zcash** | Full chain privacy | Not composable | ⚠️ Separate chains | ❌ |
+| **PrivatePay** | Link-based stealth | ✅ Simple | ✅ Unlimited | ✅ |
 
 ### Key Features
 
@@ -117,20 +126,18 @@ Powered by ECDH + secp256k1 + BIP 0352/EIP 5564 + ROFL DarkPool Mixer
 └─ Monero-style Ring Signatures & RingCT
 
 🔍 Automated Monitoring
-├─ Backend workers for transaction detection
-├─ Event-based backup system
+├─ Frontend-based transaction detection
+├─ Supabase event system
 └─ Resilient recovery mechanism
 ```
 
 ### Built With
 
 - **Blockchain**: QIE (Solidity smart contracts)
-- **Frontend**: React + TypeScript + Vite
-- **Backend**: Node.js + Express
+- **Frontend**: React + JavaScript + Vite
 - **Database**: Supabase (PostgreSQL)
 - **Cryptography**: @noble/secp256k1, @noble/hashes
 - **Wallet**: MetaMask (QIE wallet)
-- **Rewards**: Photon SDK integration
 
 ---
 
@@ -155,12 +162,6 @@ Powered by ECDH + secp256k1 + BIP 0352/EIP 5564 + ROFL DarkPool Mixer
 - **High Net Worth**: Protection from targeted attacks
 
 ---
-
-## 🎯 Competitive Landscape
-
-### Why PrivatePay Wins
-<img width="820" height="221" alt="Screenshot 2025-11-30 at 5 43 32 AM" src="https://github.com/user-attachments/assets/84f95d8e-b13a-47a1-ab44-3d4f4448c705" />
-
 
 ## ⚡ Future Roadmap
 
@@ -206,16 +207,17 @@ Powered by ECDH + secp256k1 + BIP 0352/EIP 5564 + ROFL DarkPool Mixer
 └────────┬────────┘
          │
          ▼
-┌─────────────────┐      ┌──────────────────┐
-│    Frontend     │◄────►│   Backend API    │
-│  (React + TS)   │      │  (Node.js)       │
-└────────┬────────┘      └────────┬─────────┘
-         │                        │
-         ▼                        ▼
-┌─────────────────┐      ┌──────────────────┐
-│ Stealth Address │      │   Supabase DB    │
-│    Generator    │      │  (PostgreSQL)    │
-└────────┬────────┘      └──────────────────┘
+┌─────────────────┐
+│    Frontend     │
+│  (React + Vite) │
+└────────┬────────┘
+         │
+         ├──────────────────┐
+         ▼                  ▼
+┌─────────────────┐  ┌──────────────────┐
+│ Stealth Address │  │   Supabase DB    │
+│    Generator    │  │  (PostgreSQL)    │
+└────────┬────────┘  └──────────────────┘
          │
          ▼
 ┌─────────────────────────────────┐
@@ -224,7 +226,6 @@ Powered by ECDH + secp256k1 + BIP 0352/EIP 5564 + ROFL DarkPool Mixer
 │  │  Solidity Smart Contracts│   │
 │  │  - StealthAddressRegistry│   │
 │  │  - Payment Manager       │   │
-│  │  - Event System          │   │
 │  └──────────────────────────┘   │
 └─────────────────────────────────┘
 ```
@@ -270,10 +271,9 @@ graph TB
         Dashboard[Dashboard]
     end
     
-    subgraph "Backend Layer"
-        API[Backend API]
-        Workers[Monitoring Workers]
-        DB[(Database)]
+    subgraph "Data Layer"
+        DB[(Supabase Database)]
+        API[Optional Legacy API]
     end
     
     subgraph "Blockchain Layer"
@@ -288,13 +288,11 @@ graph TB
         Crypto[Cryptographic Primitives]
     end
     
-    UI --> API
+    UI --> DB
     Wallet --> QIE
-    Dashboard --> API
-    API --> DB
-    API --> Stealth
-    Workers --> QIE
-    Workers --> Events
+    Dashboard --> DB
+    UI --> Stealth
+    Stealth --> QIE
     Stealth --> ECDH
     ECDH --> Crypto
     Solidity --> QIE
@@ -312,10 +310,8 @@ sequenceDiagram
     participant QIE as QIE Blockchain
     
     Payer->>Frontend: Access Payment Link
-    Frontend->>Backend: Request Meta Address
-    Backend->>QIE: Fetch Meta Address
-    QIE-->>Backend: Return Meta Address
-    Backend-->>Frontend: Meta Address (spendPub + viewingPub)
+    Frontend->>Supabase: Request Payment Link
+    Supabase-->>Frontend: Return Meta Address (spendPub + viewingPub)
     
     Frontend->>Crypto: Generate Ephemeral Key Pair
     Crypto-->>Frontend: ephemeralPriv, ephemeralPub
@@ -354,40 +350,30 @@ sequenceDiagram
     
     Note over Recipient: Setup Phase
     Recipient->>Frontend: Create Payment Link
-    Frontend->>Backend: Register Meta Address
-    Backend->>Solidity: register(spendPub, viewingPub)
-    Solidity->>QIE: Store Meta Address
-    QIE-->>Solidity: Confirmed
-    Solidity-->>Backend: Meta Address ID
-    Backend-->>Frontend: Payment Link Created
+    Frontend->>Frontend: Generate Meta Address
+    Frontend->>Supabase: Store Payment Link
+    Supabase-->>Frontend: Payment Link Created
     
     Note over Payer: Payment Phase
     Payer->>Frontend: Access Payment Link
-    Frontend->>Backend: Get Meta Address
-    Backend-->>Frontend: Meta Address
+    Frontend->>Supabase: Get Payment Link Data
+    Supabase-->>Frontend: Meta Address
     Frontend->>Frontend: Generate Stealth Address
-    Frontend-->>Payer: Display Stealth Address
-    Payer->>QIE: Send QIE to stealthAddress
+    Frontend-->>Payer: Display Payment Form
+    Payer->>QIE: Send QIE to Treasury Wallet
+    QIE-->>Frontend: Transaction Confirmed
     
-    Note over Workers: Monitoring Phase
-    Workers->>QIE: Scan for Transactions
-    QIE-->>Workers: Transaction Detected
-    Workers->>Solidity: emit Announcement Event
-    Note over Solidity: Store: ephemeralPub + viewHint
-    Solidity->>QIE: Event Emitted
+    Note over Frontend: Recording Phase
+    Frontend->>Supabase: Record Payment
+    Supabase->>Supabase: Update Balance
+    Supabase-->>Frontend: Payment Recorded
     
     Note over Recipient: Withdrawal Phase
-    Recipient->>Frontend: Check for Payments
-    Frontend->>Backend: Fetch Announcements
-    Backend->>QIE: Query Events
-    QIE-->>Backend: Announcement Events
-    Backend->>Backend: Compute Stealth Addresses
-    Backend->>Backend: Match with Transactions
-    Backend-->>Frontend: Payment Detected
+    Recipient->>Frontend: Check Dashboard
+    Frontend->>Supabase: Query Payments
+    Supabase-->>Frontend: Payment History
     Recipient->>Frontend: Withdraw Funds
-    Frontend->>Solidity: createTransaction(ephemeralPub)
-    Solidity->>Solidity: Compute stealthPrivateKey
-    Solidity->>QIE: Sign & Execute Transfer
+    Frontend->>QIE: Transfer from Treasury
     QIE-->>Recipient: Funds Received
 ```
 
@@ -414,8 +400,8 @@ graph TD
     end
     
     subgraph "Monitoring & Backup"
-        Workers[Backend Workers]
-        Events[Event System]
+        Frontend[Frontend Monitoring]
+        Events[Supabase Events]
         Recovery[Recovery Mechanism]
     end
     
@@ -426,7 +412,7 @@ graph TD
     Meta --> Stealth
     Ephemeral --> Stealth
     Stealth --> Receiver
-    Workers --> Events
+    Frontend --> Events
     Events --> Recovery
 ```
 
@@ -434,36 +420,29 @@ graph TD
 
 ```mermaid
 sequenceDiagram
-    participant Workers as Monitoring Workers
-    participant Backend as Backend API
+    participant Frontend
+    participant Supabase as Supabase Database
     participant QIE as QIE Blockchain
     participant Events as Event System
-    participant DB as Database
     
-    loop Every Block
-        Workers->>Backend: GET /stealth-address/recent
-        Backend->>DB: Query Recent Stealth Addresses
-        DB-->>Backend: List with isTransacted flags
-        Backend-->>Workers: Return List
+    loop User Checks Dashboard
+        Frontend->>Supabase: Query Payment Links
+        Supabase-->>Frontend: Return Payment Links
         
-        loop For Each Stealth Address
-            alt isTransacted == true
-                Workers->>QIE: Check Transaction Status
-                QIE-->>Workers: Transaction Confirmed
-                Workers->>Events: emit Announcement Event
-                Note over Events: Store: ephemeralPub + viewHint<br/>NO stealthAddress<br/>NO metaAddress
-                Events->>QIE: Event Logged
-            else isTransacted == false
-                Workers->>QIE: Continue Monitoring
-            end
+        Frontend->>QIE: Check Transaction Status
+        QIE-->>Frontend: Transaction Data
+        
+        alt Transaction Found
+            Frontend->>Supabase: Update Payment Record
+            Frontend->>Events: Trigger Balance Update
         end
     end
     
-    Note over Backend,DB: Recovery Scenario
-    Backend->>QIE: Fetch All Announcement Events
-    QIE-->>Backend: All Events
-    Backend->>Backend: Rebuild Database from Events
-    Backend->>DB: Restore Stealth Address Data
+    Note over Frontend,Supabase: Recovery Scenario
+    Frontend->>QIE: Fetch All Transactions
+    QIE-->>Frontend: Transaction History
+    Frontend->>Frontend: Rebuild Database Records
+    Frontend->>Supabase: Restore Payment Data
 ```
 
 ### 6. User Registration & Meta Address Setup
@@ -483,15 +462,9 @@ sequenceDiagram
     Crypto->>Crypto: Generate viewingPriv/viewingPub
     Crypto-->>Frontend: Key Pairs
     
-    Frontend->>Backend: Register Meta Address
-    Backend->>Solidity: register(spendPub, viewingPub)
-    Solidity->>QIE: Store Meta Address
-    QIE-->>Solidity: Transaction Confirmed
-    Solidity-->>Backend: Meta Address ID
-    
-    Backend->>Backend: Create Payment Link
-    Backend->>Backend: Store in Database
-    Backend-->>Frontend: Payment Link Created
+    Frontend->>Frontend: Generate Meta Address
+    Frontend->>Supabase: Store Payment Link
+    Supabase-->>Frontend: Payment Link Created
     Frontend-->>User: Display Payment Link
 ```
 
@@ -569,71 +542,76 @@ graph TB
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/AmaanSayyad/PrivatePay.git
-cd PrivatePay
+git clone https://github.com/AmaanSayyad/Private-Pay-QIE.git
+cd Private-Pay-QIE
 ```
 
 2. **Install dependencies**
 ```bash
-# Frontend
-cd squidl-frontend
-npm install
-
-# Backend
-cd ../squidl-backend
 npm install
 ```
 
 3. **Configure environment variables**
 
-Frontend (`.env`):
+Create a `.env` file in the root directory:
 ```env
+# Supabase Configuration (Required)
 VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_key
-VITE_TREASURY_WALLET_ADDRESS=your_treasury_wallet
-VITE_WEBSITE_HOST=privatepay.me
-VITE_PHOTON_API_KEY=your_photon_api_key
-VITE_PHOTON_CAMPAIGN_ID=your_campaign_id
-```
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-Backend (`.env`):
-```env
-DATABASE_URL=your_database_url
-JWT_SECRET=your_jwt_secret
-PORT=3000
+# Treasury Wallet (Required)
+VITE_TREASURY_WALLET_ADDRESS=your_treasury_wallet_address
+
+# Website Configuration (Required)
+VITE_WEBSITE_HOST=privatepay.me
+
+# QIE Network Configuration (Optional - has defaults)
+VITE_QIE_TESTNET_RPC_URL=https://rpc1testnet.qie.digital/
+VITE_QIE_TESTNET_CHAIN_ID=1983
+VITE_QIE_TESTNET_EXPLORER_URL=https://testnet.qie.digital
+VITE_QIE_STEALTH_REGISTRY_ADDRESS=0x084e08c8011ed2b519ac844836c49efa944c5921
+VITE_QIE_PAYMENT_MANAGER_ADDRESS=0x0ab4d2d7642d2ac00206042b87bfc82a6f96737b
+
+# App Environment (Optional)
+VITE_APP_ENVIRONMENT=dev
+
+# Dynamic Wallet Integration (Optional)
+VITE_DYNAMIC_ENV_ID=your_dynamic_environment_id
+
+# Legacy Contract Address (Optional)
+VITE_SQUIDL_STEALTHSIGNER_CONTRACT_ADDRESS=your_contract_address
+
+# Treasury Private Key (Optional - for automated withdrawals)
+VITE_TREASURY_PRIVATE_KEY=your_treasury_private_key
+
+# Paymaster (Optional)
+VITE_PAYMASTER_PK=your_paymaster_private_key
+
+# Legacy Backend API (Optional - for legacy features)
+VITE_BACKEND_URL=your_backend_api_url
+
+# Infura API Key (Optional - for other EVM chains)
+VITE_INFURA_API_KEY=your_infura_api_key
+
+# Local Development (Optional)
+VITE_ENABLE_LOCAL_DNS=false
 ```
 
 4. **Run the application**
 ```bash
-# Frontend (port 5173)
-cd squidl-frontend
-npm run dev
-
-# Backend (port 3000)
-cd squidl-backend
 npm run dev
 ```
 
 5. **Access the app**
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3000
+- Application: http://localhost:5173
 
----
-
-## 📚 Documentation
-
-- [Troubleshooting Guide](./TROUBLESHOOTING_GUIDE.md) - Common issues and solutions
-- [QIE Rate Limit Fix](./QIE_RATE_LIMIT_FIX.md) - Auto-retry for API rate limits
-- [Withdraw Fix Details](./WITHDRAW_JSON_ERROR_FIX.md) - Supabase error handling
-- [Project Status](./PROJECT_RUNNING_STATUS.md) - Current running status
-- [Environment Variables](./ENV_CHECK_REPORT.md) - Configuration guide
 
 ---
 ## 🙏 Acknowledgments
 
 ### Technology
 
-- **QIE Foundation** - For the amazing blockchain platform
+- **QIE Foundation** - For the chain
 - **Oasis Protocol** - Inspiration from ROFL and Sapphire
 - **BIP 0352 / EIP 5564** - Stealth address standards
 - **@noble** libraries - Cryptographic primitives
@@ -648,5 +626,5 @@ npm run dev
 </p>
 
 <p align="center">
-  <strong>PrivatePay: Where every transaction is invisible.</strong>
+  <strong>Private-Pay: Where every transaction is invisible.</strong>
 </p>
