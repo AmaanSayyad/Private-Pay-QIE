@@ -46,10 +46,10 @@ Powered by ECDH + secp256k1 + BIP 0352/EIP 5564 + ROFL DarkPool Mixer
 
 ### Core Benefits
 
-✨ **Sender privacy**: Your wallet is never linked to the transaction
-✨ **Receiver privacy**: Recipients' identities remain hidden
-✨ **Observer blindness**: Third parties see nothing linkable
-✨ **Simple UX**: Like Stripe links, but every transaction is a new, invisible wallet
+- ✨ **Sender privacy**: Your wallet is never linked to the transaction
+- ✨ **Receiver privacy**: Recipients' identities remain hidden
+- ✨ **Observer blindness**: Third parties see nothing linkable
+- ✨ **Simple UX**: Like Stripe links, but every transaction is a new, invisible wallet
 
 ### Comparison with Other Privacy Solutions
 
