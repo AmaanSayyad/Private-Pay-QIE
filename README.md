@@ -611,7 +611,7 @@ npm run dev
 
 ### Technology
 
-- **QIE Foundation** - For the chain
+- **QIE Foundation** - The chain with low network fees and fast settlement
 - **Oasis Protocol** - Inspiration from ROFL and Sapphire
 - **BIP 0352 / EIP 5564** - Stealth address standards
 - **@noble** libraries - Cryptographic primitives
