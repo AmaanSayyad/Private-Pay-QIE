@@ -134,7 +134,7 @@ Powered by ECDH + secp256k1 + BIP 0352/EIP 5564 + ROFL DarkPool Mixer
 ### Built With
 
 - **Blockchain**: QIE (Solidity smart contracts)
-- **Frontend**: React + JavaScript + Vite
+- **Frontend**: React + Vite
 - **Database**: Supabase (PostgreSQL)
 - **Cryptography**: @noble/secp256k1, @noble/hashes
 - **Wallet**: MetaMask (QIE wallet)
